@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Market Patti | Financial Card Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #064e3b; /* Casino Green */
+            --primary: #fbbf24;  /* Gold accents */
+            --primary-hover: #f59e0b;
+            --text-main: #f8fafc;
+            --text-dark: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; user-select: none; }
+
+        body {
+            background: radial-gradient(circle at center, #065f46 0%, #022c22 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        header {
+            width: 100%;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 2px solid var(--primary);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .title { font-size: 1.5rem; font-weight: 800; color: var(--primary); letter-spacing: 1px; text-transform: uppercase;}
+
+        .chip-counter {
+            background: rgba(0,0,0,0.5);
+            padding: 0.5rem 1rem;
+            border-radius: 999px;
+            border: 1px solid var(--primary);
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+        }
+
+        .table-area {
+            flex: 1;
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2rem 1rem;
+            position: relative;
+        }
+
+        /* Hand Areas */
+        .hand { display: flex; justify-content: center; gap: 15px; perspective: 1000px; }
+
+        .card {
+            width: 100px;
+            height: 140px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+            border: 4px solid white;
+            color: var(--text-dark);
+            text-align: center;
+            padding: 8px;
+        }
+
+        .card.dealt { transform: translateY(-20px) scale(1.1); border-color: var(--primary); z-index: 10; box-shadow: 0 0 20px rgba(251, 191, 36, 0.5); }
+        .card.dimmed { opacity: 0.4; transform: scale(0.9); }
+
+        .card-face-down {
+            background: repeating-linear-gradient(45deg, #1e293b, #1e293b 10px, #0f172a 10px, #0f172a 20px);
+            border-color: #334155;
+        }
+
+        .card-icon { font-size: 2.5rem; margin-bottom: 5px; }
+        .card-title { font-weight: 800; font-size: 0.9rem; text-transform: uppercase; }
+
+        /* Center Area: News & Pot */
+        .center-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .pot {
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #34d399;
+            color: #34d399;
+            padding: 0.8rem 2rem;
+            border-radius: 999px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            box-shadow: 0 0 15px rgba(52, 211, 153, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .market-news {
+            background: rgba(255, 255, 255, 0.95);
+            color: var(--text-dark);
+            padding: 1.5rem 2rem;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+            border-top: 6px solid var(--primary);
+            opacity: 0;
+            transform: scale(0.8) translateY(20px);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .market-news.active { opacity: 1; transform: scale(1) translateY(0); }
+        .news-title { font-size: 0.9rem; color: #64748b; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem; }
+        .news-headline { font-size: 1.4rem; font-weight: 800; color: #1e293b; line-height: 1.2; }
+
+        /* Actions */
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .actions.active { opacity: 1; pointer-events: auto; }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .btn:active { transform: translateY(2px); box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+
+        .btn-pack { background: #ef4444; }
+        .btn-pack:hover { background: #dc2626; }
+        .btn-chaal { background: var(--primary); color: #78350f; }
+        .btn-chaal:hover { background: var(--primary-hover); }
+
+        .btn-new-round { background: #3b82f6; display: none; margin: 0 auto; margin-top: 10px;}
+        .btn-new-round.active { display: block; }
+
+        /* Modals */
+        .modal-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .modal-backdrop.active { opacity: 1; pointer-events: auto; }
+        .modal {
+            background: white; color: var(--text-dark); border-radius: 20px;
+            padding: 2rem; width: 90%; max-width: 400px; text-align: center;
+            transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-backdrop.active .modal { transform: scale(1); }
+        .modal h2 { margin-bottom: 1rem; font-size: 1.8rem; }
+        .win-title { color: #10b981; }
+        .loss-title { color: #ef4444; }
+        .tie-title { color: #f59e0b; }
+        
+        .modal p { color: #475569; margin-bottom: 1.5rem; line-height: 1.5; font-size: 1.1rem; }
+        .modal .btn { width: 100%; background: #3b82f6; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="title">Market Patti</div>
+        <div class="chip-counter">🪙 <span id="player-chips">500</span></div>
+    </header>
+
+    <div class="table-area">
+        <!-- Computer Hand -->
+        <div class="hand" id="computer-hand">
+            <div class="card card-face-down" id="comp-card-0"></div>
+            <div class="card card-face-down" id="comp-card-1"></div>
+            <div class="card card-face-down" id="comp-card-2"></div>
+        </div>
+
+        <!-- Center Area -->
+        <div class="center-area">
+            <div class="pot" id="pot-display">💰 Pot: 0</div>
+            
+            <div class="market-news" id="news-card">
+                <div class="news-title">Breaking News</div>
+                <div class="news-headline" id="news-text">Inflation is Skyrocketing!</div>
+            </div>
+
+            <button class="btn btn-new-round" id="btn-next" onclick="startRound()">Deal Next Round (-10 Ante)</button>
+        </div>
+
+        <!-- Actions -->
+        <div class="actions" id="action-buttons">
+            <button class="btn btn-pack" onclick="pack()">Pack (Fold)</button>
+            <button class="btn btn-chaal" onclick="chaal()">Chaal (Bet 50)</button>
+        </div>
+
+        <!-- Player Hand -->
+        <div class="hand" id="player-hand">
+            <div class="card" id="player-card-0">
+                <div class="card-icon">💵</div><div class="card-title">Cash</div>
+            </div>
+            <div class="card" id="player-card-1">
+                <div class="card-icon">🏆</div><div class="card-title">Gold</div>
+            </div>
+            <div class="card" id="player-card-2">
+                <div class="card-icon">📈</div><div class="card-title">Mutual<br>Fund</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Outcome Modal -->
+    <div class="modal-backdrop" id="outcome-modal">
+        <div class="modal">
+            <h2 id="outcome-title">You Win!</h2>
+            <p id="outcome-desc">Because inflation skyrocketed, your Gold held its value while cash lost purchasing power!</p>
+            <button class="btn" onclick="closeOutcome()">Continue</button>
+        </div>
+    </div>
+
+    <script>
+        const CARDS = [
+            { id: 0, name: 'Cash', icon: '💵' },
+            { id: 1, name: 'Gold', icon: '🏆' },
+            { id: 2, name: 'Mutual Fund', icon: '📈' }
+        ];
+
+        const EVENTS = [
+            {
+                text: "Inflation is Skyrocketing!",
+                desc: "Cost of living goes up rapidly.",
+                winnerId: 1, // Gold
+                explanation: "Gold is a safe-haven asset that traditionally protects wealth against inflation when the cost of living goes up."
+            },
+            {
+                text: "Economic Boom!",
+                desc: "Businesses are growing extremely fast.",
+                winnerId: 2, // Mutual Fund
+                explanation: "Stocks soar during a boom, making a diversified Mutual Fund the best performing asset."
+            },
+            {
+                text: "Stock Market Crash!",
+                desc: "Panic in the markets, stocks plummeting.",
+                winnerId: 0, // Cash
+                explanation: "Cash is king during a market crash. While Mutual Funds lose value, cash stays safe."
+            }
+        ];
+
+        let playerChips = 500;
+        let compChips = 500; // Simulated computer bank
+        let pot = 0;
+        
+        let currentEvent = null;
+        let playerDealtId = null;
+        let compDealtId = null;
+
+        // Load state
+        function loadState() {
+            const saved = localStorage.getItem('marketpatti_state');
+            if (saved) {
+                const state = JSON.parse(saved);
+                playerChips = state.playerChips || 500;
+            }
+            updateHUD();
+        }
+
+        function saveState() {
+            localStorage.setItem('marketpatti_state', JSON.stringify({ playerChips }));
+        }
+
+        function updateHUD() {
+            document.getElementById('player-chips').innerText = playerChips;
+            document.getElementById('pot-display').innerText = `💰 Pot: ${pot}`;
+        }
+
+        function resetTable() {
+            // Reset Cards visually
+            for (let i=0; i<3; i++) {
+                const pCard = document.getElementById(`player-card-${i}`);
+                pCard.className = 'card';
+                
+                const cCard = document.getElementById(`comp-card-${i}`);
+                cCard.className = 'card card-face-down';
+                cCard.innerHTML = '';
+            }
+            
+            document.getElementById('news-card').classList.remove('active');
+            document.getElementById('action-buttons').classList.remove('active');
+            document.getElementById('btn-next').classList.remove('active');
+        }
+
+        function startRound() {
+            if (playerChips < 10) {
+                alert("Game Over! You're out of chips.");
+                playerChips = 500; // Reset for demo
+                saveState();
+            }
+
+            resetTable();
+            
+            // Ante
+            playerChips -= 10;
+            compChips -= 10;
+            pot = 20;
+            updateHUD();
+
+            // Deal logic: Randomly select 1 active card for Player and 1 for Comp (from the 3 visually)
+            playerDealtId = Math.floor(Math.random() * 3);
+            compDealtId = Math.floor(Math.random() * 3);
+            currentEvent = EVENTS[Math.floor(Math.random() * EVENTS.length)];
+
+            // Animate dealings
+            setTimeout(() => {
+                // Highlight player card, dim others
+                for (let i=0; i<3; i++) {
+                    const pCard = document.getElementById(`player-card-${i}`);
+                    if (i === playerDealtId) {
+                        pCard.classList.add('dealt');
+                    } else {
+                        pCard.classList.add('dimmed');
+                    }
+                    
+                    const cCard = document.getElementById(`comp-card-${i}`);
+                    if (i === compDealtId) {
+                        cCard.classList.add('dealt'); // Still face down but raised
+                    } else {
+                        cCard.classList.add('dimmed');
+                    }
+                }
+
+                // Show Event
+                document.getElementById('news-text').innerHTML = `${currentEvent.text}<br><span style="font-size:0.9rem; font-weight:400; color:#475569;">${currentEvent.desc}</span>`;
+                document.getElementById('news-card').classList.add('active');
+
+                // Enable actions
+                setTimeout(() => {
+                    document.getElementById('action-buttons').classList.add('active');
+                }, 500);
+
+            }, 300);
+        }
+
+        function pack() {
+            document.getElementById('action-buttons').classList.remove('active');
+            pot = 0; // Computer takes it 
+            updateHUD();
+            
+            showOutcome("Packed", "loss-title", "You folded and lost your 10 chip entry fee. The market favors the brave, but sometimes folding is safe.");
+        }
+
+        function chaal() {
+            if (playerChips < 50) {
+                alert("Not enough chips to Chaal!");
+                return;
+            }
+
+            document.getElementById('action-buttons').classList.remove('active');
+            
+            // Bets
+            playerChips -= 50;
+            compChips -= 50;
+            pot += 100;
+            updateHUD();
+
+            // Reveal Computer Card
+            const cCard = document.getElementById(`comp-card-${compDealtId}`);
+            cCard.classList.remove('card-face-down');
+            const compAsset = CARDS[compDealtId];
+            cCard.innerHTML = `<div class="card-icon">${compAsset.icon}</div><div class="card-title">${compAsset.name}</div>`;
+            cCard.style.color = 'var(--text-dark)';
+            cCard.style.background = 'white';
+
+            setTimeout(() => { evaluateWinner(); }, 800);
+        }
+
+        function evaluateWinner() {
+            const winAssetId = currentEvent.winnerId;
+            let pHasWin = (playerDealtId === winAssetId);
+            let cHasWin = (compDealtId === winAssetId);
+
+            let resultTitle = "";
+            let resultClass = "";
+            let chipChangeText = "";
+
+            if (pHasWin && !cHasWin) {
+                // Player purely wins
+                playerChips += pot;
+                resultTitle = "Chaal Won! + " + pot;
+                resultClass = "win-title";
+            } else if (!pHasWin && cHasWin) {
+                // Computer purely wins
+                compChips += pot;
+                resultTitle = "Computer Won! - " + (10 + 50); // ante + bet
+                resultClass = "loss-title";
+            } else if (pHasWin && cHasWin) {
+                // Split
+                playerChips += (pot / 2);
+                compChips += (pot / 2);
+                resultTitle = "It's a Tie! Split Pot";
+                resultClass = "tie-title";
+            } else {
+                // Neither has winning asset. Let's say tie to preserve chips.
+                playerChips += (pot / 2);
+                compChips += (pot / 2);
+                resultTitle = "No Winner! Split Pot";
+                resultClass = "tie-title";
+                currentEvent.explanation = "Neither player held the ideal asset (" + CARDS[winAssetId].name + "). " + currentEvent.explanation;
+            }
+
+            pot = 0;
+            updateHUD();
+            saveState();
+
+            let descText = `<b>Winning Asset: ${CARDS[winAssetId].name}</b><br><br>${currentEvent.explanation}`;
+            
+            showOutcome(resultTitle, resultClass, descText);
+        }
+
+        function showOutcome(title, titleClass, desc) {
+            const mTitle = document.getElementById('outcome-title');
+            mTitle.className = titleClass;
+            mTitle.innerText = title;
+            document.getElementById('outcome-desc').innerHTML = desc;
+            
+            document.getElementById('outcome-modal').classList.add('active');
+        }
+
+        function closeOutcome() {
+            document.getElementById('outcome-modal').classList.remove('active');
+            document.getElementById('btn-next').classList.add('active');
+        }
+
+        // Init
+        loadState();
+        document.getElementById('btn-next').classList.add('active'); // show start button
+
+    </script>
+</body>
+</html>
