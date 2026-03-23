@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KaChing: Fin-dle</title>
+    <style>
+        :root {
+            --bg: #121213; --panel: #272729; --text: #ffffff;
+            --green: #538d4e; --yellow: #b59f3b; --gray: #3a3a3c;
+            --light-gray: #818384;
+        }
+
+        body {
+            background-color: var(--bg); color: var(--text); font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+            margin: 0; padding: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            width: 100%; max-width: 500px; display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 20px; border-bottom: 1px solid var(--gray); z-index: 10;
+        }
+        h1 { margin: 0; font-size: 24px; font-weight: bold; letter-spacing: 2px; }
+        .stats { display: flex; gap: 15px; font-weight: bold; font-size: 14px; }
+        .btn-glossary { background: var(--panel); border: none; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;}
+        .btn-glossary:hover { background: var(--light-gray); }
+
+        /* Game Area */
+        #game-board {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; max-width: 500px; padding: 10px;
+        }
+        
+        #hint-box {
+            background: rgba(83, 141, 78, 0.1); border: 1px solid var(--green); padding: 10px; border-radius: 8px;
+            font-size: 14px; text-align: center; margin-bottom: 20px; width: 90%; color: #bbdbb5; font-style: italic;
+        }
+
+        .grid-row { display: flex; gap: 5px; margin-bottom: 5px; }
+        
+        .grid-cell {
+            width: 50px; height: 50px; border: 2px solid var(--gray); display: flex; align-items: center; justify-content: center;
+            font-size: 28px; font-weight: bold; text-transform: uppercase; user-select: none;
+        }
+        .grid-cell.filled { border-color: var(--light-gray); }
+
+        /* Flip Animation */
+        .grid-cell.reveal {
+            animation: flip 0.6s ease forwards;
+        }
+        @keyframes flip {
+            0% { transform: rotateX(0deg); }
+            50% { transform: rotateX(90deg); }
+            100% { transform: rotateX(0deg); border-color: transparent;}
+        }
+
+        .correct { background-color: var(--green); color: white; border-color: var(--green) !important;}
+        .present { background-color: var(--yellow); color: white; border-color: var(--yellow) !important;}
+        .absent { background-color: var(--gray); color: white; border-color: var(--gray) !important;}
+
+        /* Keyboard */
+        #keyboard {
+            width: 100%; max-width: 500px; display: flex; flex-direction: column; gap: 8px; padding: 10px; margin-bottom: 20px;
+        }
+        .kb-row { display: flex; justify-content: center; gap: 6px; }
+        .kb-key {
+            background: var(--light-gray); color: white; border: none; border-radius: 4px; padding: 15px 10px;
+            font-weight: bold; font-size: 14px; cursor: pointer; text-transform: uppercase; flex: 1; max-width: 45px;
+            display: flex; align-items: center; justify-content: center; user-select: none; transition: 0.2s;
+        }
+        .kb-key.large { flex: 1.5; max-width: 65px; font-size: 12px; }
+        .kb-key:hover { opacity: 0.8; }
+        
+        .kb-key.correct { background-color: var(--green); }
+        .kb-key.present { background-color: var(--yellow); }
+        .kb-key.absent { background-color: var(--gray); }
+
+        /* Modals */
+        .modal {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8);
+            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 50; padding: 20px;
+        }
+        .modal-content {
+            background: var(--panel); border-radius: 8px; width: 100%; max-width: 400px; padding: 25px; box-shadow: 0 4px 23px 0 rgba(0,0,0,0.5); text-align: center; position: relative;
+        }
+        .modal-title { font-size: 24px; font-weight: bold; margin-bottom: 15px; }
+        .modal-close { position: absolute; right: 15px; top: 15px; background: transparent; border: none; color: var(--light-gray); font-size: 20px; cursor: pointer; }
+
+        .lesson-box { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; font-size: 15px; line-height: 1.5; text-align: left; border-left: 4px solid var(--green); margin: 20px 0;}
+        .btn-next { background: var(--green); color: white; border: none; padding: 15px 30px; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; width: 100%;}
+        
+        .glossary-list { max-height: 400px; overflow-y: auto; text-align: left; }
+        .g-item { border-bottom: 1px solid var(--gray); padding: 15px 0; }
+        .g-word { font-weight: bold; color: var(--green); font-size: 18px; margin-bottom: 5px; }
+        .g-def { font-size: 14px; color: #ccc; line-height: 1.4; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>FIN-DLE</h1>
+        <div class="stats">
+            <span>🔥 Streak: <span id="streak-val">0</span></span>
+            <button class="btn-glossary" onclick="showGlossary()">GLOSSARY</button>
+        </div>
+    </header>
+
+    <div id="game-board">
+        <div id="hint-box"></div>
+        <div id="grid-container"></div>
+    </div>
+
+    <div id="keyboard">
+        <div class="kb-row">
+            <button class="kb-key" data-key="q">Q</button><button class="kb-key" data-key="w">W</button><button class="kb-key" data-key="e">E</button><button class="kb-key" data-key="r">R</button><button class="kb-key" data-key="t">T</button><button class="kb-key" data-key="y">Y</button><button class="kb-key" data-key="u">U</button><button class="kb-key" data-key="i">I</button><button class="kb-key" data-key="o">O</button><button class="kb-key" data-key="p">P</button>
+        </div>
+        <div class="kb-row">
+            <button class="kb-key" data-key="a">A</button><button class="kb-key" data-key="s">S</button><button class="kb-key" data-key="d">D</button><button class="kb-key" data-key="f">F</button><button class="kb-key" data-key="g">G</button><button class="kb-key" data-key="h">H</button><button class="kb-key" data-key="j">J</button><button class="kb-key" data-key="k">K</button><button class="kb-key" data-key="l">L</button>
+        </div>
+        <div class="kb-row">
+            <button class="kb-key large" data-key="enter">ENTER</button><button class="kb-key" data-key="z">Z</button><button class="kb-key" data-key="x">X</button><button class="kb-key" data-key="c">C</button><button class="kb-key" data-key="v">V</button><button class="kb-key" data-key="b">B</button><button class="kb-key" data-key="n">N</button><button class="kb-key" data-key="m">M</button><button class="kb-key large" data-key="backspace">⌫</button>
+        </div>
+    </div>
+
+    <!-- Aha Modal -->
+    <div id="aha-modal" class="modal">
+        <div class="modal-content">
+            <div id="aha-title" class="modal-title">Concept Unlocked!</div>
+            <div style="font-size: 24px; font-weight: bold; letter-spacing: 2px;" id="aha-word">YIELD</div>
+            <div class="lesson-box" id="aha-lesson"></div>
+            <button class="btn-next" onclick="nextWord()">Next Word</button>
+        </div>
+    </div>
+
+    <!-- Glossary Modal -->
+    <div id="glossary-modal" class="modal">
+        <div class="modal-content" style="max-height: 80vh; display: flex; flex-direction: column;">
+            <button class="modal-close" onclick="document.getElementById('glossary-modal').style.display='none'">×</button>
+            <div class="modal-title" style="color:var(--yellow)">Your Glossary</div>
+            <p style="font-size:12px; color:#aaa; margin-top:0;">Words you've permanently unlocked.</p>
+            <div class="glossary-list" id="glossary-list">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+<script>
+    const DICTIONARY = [
+        { word: "YIELD", hint: "The fruit your money bears over time.", lesson: "Yield: The income returned on an investment. If you buy a $100 stock and it pays $5 a year in dividends, your yield is 5%." },
+        { word: "INDEX", hint: "A basket that holds the whole market.", lesson: "Index: A tracker of a specific group of stocks (like the S&P 500). Buying an index fund means you own a tiny slice of all those companies instantly." },
+        { word: "BULLS", hint: "They attack by thrusting their horns up.", lesson: "Bull Market: A market where prices are rising or expected to rise. Investors are optimistic and buying." },
+        { "word": "BEARS", "hint": "They attack by swiping their paws down.", "lesson": "Bear Market: A market where prices are falling (usually down 20% or more). Investors are fearful and selling." },
+        { "word": "EQUITY", "hint": "True ownership, not just a loan.", "lesson": "Equity: The value of the shares issued by a company. In plain terms: It's the piece of the pie you actually own outright." },
+        { "word": "FLOAT", "hint": "Shares swimming freely in the open market.", "lesson": "Float: The regular shares a company has issued to the public that are available for investors to trade." },
+        { "word": "MARGIN", "hint": "Borrowed capital to amplify trades.", "lesson": "Margin: Using borrowed money from your broker to buy securities. It amplifies gains but equally mathematically amplifies your downside wipeout risk." },
+        { "word": "THETA", "hint": "The thief of time in derivatives.", "lesson": "Theta: Represents the rate of decline in the value of an option due to the passage of time. If you own options, time is literally burning your money." },
+        { "word": "HEDGE", "hint": "An insurance policy for your portfolio.", "lesson": "Hedge: An investment made to reduce the risk of adverse price movements in an asset. Usually done by buying derivative contracts against your main position." }
+    ];
+
+    let currentLevel;
+    let currentRow = 0;
+    let currentTile = 0;
+    let isGameOver = false;
+    let maxRows = 6;
+    let targetWord = "";
+    
+    // Save state
+    let streak = localStorage.getItem('findle_streak') || 0;
+    let unlockedObj = JSON.parse(localStorage.getItem('findle_glossary') || '{}'); 
+
+    document.getElementById('streak-val').innerText = streak;
+
+    function initGame() {
+        // Find un-unlocked words
+        let remaining = DICTIONARY.filter(d => !unlockedObj[d.word]);
+        if (remaining.length === 0) {
+            // All unlocked, pure random mode
+            currentLevel = DICTIONARY[Math.floor(Math.random() * DICTIONARY.length)];
+        } else {
+            currentLevel = remaining[0]; // sequential learning path
+        }
+        
+        targetWord = currentLevel.word;
+        maxRows = 6; // Fixed attempts
+        currentRow = 0;
+        currentTile = 0;
+        isGameOver = false;
+
+        document.getElementById('hint-box').innerText = `"${currentLevel.hint}"`;
+
+        // Build Dynamic Grid based on word length
+        const gridContainer = document.getElementById('grid-container');
+        gridContainer.innerHTML = '';
+        
+        for (let r = 0; r < maxRows; r++) {
+            let row = document.createElement('div');
+            row.className = 'grid-row';
+            row.id = `row-${r}`;
+            
+            for (let c = 0; c < targetWord.length; c++) {
+                let cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                cell.id = `cell-${r}-${c}`;
+                row.appendChild(cell);
+            }
+            gridContainer.appendChild(row);
+        }
+
+        // Reset Keyboard
+        requestAnimationFrame(() => {
+            document.querySelectorAll('.kb-key').forEach(k => {
+                k.classList.remove('correct', 'present', 'absent');
+            });
+        });
+    }
+
+    // Input Handling
+    function handleInput(key) {
+        if (isGameOver) return;
+        
+        if (key === 'enter') {
+            submitGuess();
+        } else if (key === 'backspace' || key === 'delete') {
+            deleteLetter();
+        } else if (/^[a-z]$/i.test(key)) {
+            addLetter(key.toUpperCase());
+        }
+    }
+
+    document.addEventListener('keydown', (e) => {
+        handleInput(e.key.toLowerCase());
+    });
+
+    document.querySelectorAll('.kb-key').forEach(btn => {
+        btn.addEventListener('click', () => {
+            handleInput(btn.dataset.key);
+        });
+    });
+
+    function addLetter(letter) {
+        if (currentTile < targetWord.length) {
+            let cell = document.getElementById(`cell-${currentRow}-${currentTile}`);
+            cell.innerText = letter;
+            cell.classList.add('filled');
+            currentTile++;
+        }
+    }
+
+    function deleteLetter() {
+        if (currentTile > 0) {
+            currentTile--;
+            let cell = document.getElementById(`cell-${currentRow}-${currentTile}`);
+            cell.innerText = "";
+            cell.classList.remove('filled');
+        }
+    }
+
+    function submitGuess() {
+        if (currentTile !== targetWord.length) {
+            shakeRow(currentRow);
+            return;
+        }
+
+        let guess = "";
+        for (let i = 0; i < targetWord.length; i++) {
+            guess += document.getElementById(`cell-${currentRow}-${i}`).innerText;
+        }
+
+        validateGuess(guess);
+    }
+
+    function shakeRow(rowIdx) {
+        let row = document.getElementById(`row-${rowIdx}`);
+        row.style.animation = "none";
+        row.offsetHeight; /* trigger reflow */
+        row.style.animation = "shake 0.4s ease";
+    }
+
+    // Dynamic style injection for shake
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes shake {
+            0%, 100% {transform: translateX(0);}
+            20%, 60% {transform: translateX(-5px);}
+            40%, 80% {transform: translateX(5px);}
+        }
+    `;
+    document.head.appendChild(style);
+
+    function validateGuess(guess) {
+        isGameOver = true; // block input during animation
+        
+        let targetArr = targetWord.split('');
+        let guessArr = guess.split('');
+        let results = new Array(targetWord.length).fill('absent');
+
+        // Pass 1: Exact matches (Green)
+        for(let i=0; i<targetWord.length; i++) {
+            if (guessArr[i] === targetArr[i]) {
+                results[i] = 'correct';
+                targetArr[i] = null; // consume letter
+                guessArr[i] = null;
+            }
+        }
+
+        // Pass 2: Partial matches (Yellow)
+        for(let i=0; i<targetWord.length; i++) {
+            if (guessArr[i] !== null && targetArr.includes(guessArr[i])) {
+                results[i] = 'present';
+                targetArr[targetArr.indexOf(guessArr[i])] = null; // consume
+            }
+        }
+
+        // Animate row and update keyboard
+        for(let i=0; i<targetWord.length; i++) {
+            setTimeout(() => {
+                let cell = document.getElementById(`cell-${currentRow}-${i}`);
+                cell.classList.add('reveal');
+                
+                // Set color half-way through animation
+                setTimeout(() => {
+                    cell.classList.add(results[i]);
+                    updateKeyboard(guess[i], results[i]);
+                }, 300);
+
+                // If last cell animated, evaluate board state
+                if (i === targetWord.length - 1) {
+                    setTimeout(() => {
+                        evaluateState(guess, results);
+                    }, 600);
+                }
+            }, i * 200); // Stagger flip
+        }
+    }
+
+    function updateKeyboard(letter, status) {
+        requestAnimationFrame(() => {
+            let key = document.querySelector(`.kb-key[data-key="${letter.toLowerCase()}"]`);
+            if (!key) return;
+
+            // Upgrade status only (don't downgrade green to yellow)
+            if (key.classList.contains('correct')) return;
+            if (key.classList.contains('present') && status === 'absent') return;
+            
+            key.classList.remove('present', 'absent', 'correct');
+            key.classList.add(status);
+        });
+    }
+
+    function evaluateState(guess, results) {
+        if (guess === targetWord) {
+            // WIN
+            streak++;
+            saveWin();
+            showAhaModal(true);
+        } else {
+            currentRow++;
+            if (currentRow >= maxRows) {
+                // LOSE
+                streak = 0;
+                localStorage.setItem('findle_streak', 0);
+                document.getElementById('streak-val').innerText = 0;
+                showAhaModal(false);
+            } else {
+                currentTile = 0;
+                isGameOver = false; // resume input
+            }
+        }
+    }
+
+    function saveWin() {
+        localStorage.setItem('findle_streak', streak);
+        document.getElementById('streak-val').innerText = streak;
+        unlockedObj[targetWord] = currentLevel.lesson;
+        localStorage.setItem('findle_glossary', JSON.stringify(unlockedObj));
+    }
+
+    function showAhaModal(isWin) {
+        let modal = document.getElementById('aha-modal');
+        let title = document.getElementById('aha-title');
+        
+        if (isWin) {
+            title.innerText = "Concept Unlocked!";
+            title.style.color = "var(--green)";
+        } else {
+            title.innerText = "Word Missed";
+            title.style.color = "var(--gray)";
+        }
+
+        document.getElementById('aha-word').innerText = targetWord;
+        document.getElementById('aha-lesson').innerHTML = `<strong>${targetWord}</strong><br><br>${currentLevel.lesson}`;
+        
+        modal.style.display = 'flex';
+    }
+
+    function nextWord() {
+        document.getElementById('aha-modal').style.display = 'none';
+        initGame();
+    }
+
+    function showGlossary() {
+        const list = document.getElementById('glossary-list');
+        list.innerHTML = '';
+        
+        let keys = Object.keys(unlockedObj);
+        if(keys.length === 0) {
+            list.innerHTML = '<div style="color:#aaa; text-align:center;">Guess words to build your glossary!</div>';
+        } else {
+            keys.forEach(k => {
+                list.innerHTML += `
+                    <div class="g-item">
+                        <div class="g-word">${k}</div>
+                        <div class="g-def">${unlockedObj[k]}</div>
+                    </div>
+                `;
+            });
+        }
+
+        document.getElementById('glossary-modal').style.display = 'flex';
+    }
+
+    window.onload = initGame;
+</script>
+
+</body>
+</html>

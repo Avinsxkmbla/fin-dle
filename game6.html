@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KaChing: Option Formations Puzzle</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=VT323&display=swap');
+        
+        :root {
+            --bg: #1c1917; --panel: #292524; --text: #f5f5f4;
+            --primary: #fcd34d; --laser: #0ea5e9; --bad: #ef4444;
+        }
+
+        body {
+            background-color: var(--bg); color: var(--text); font-family: 'VT323', monospace;
+            display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px;
+        }
+
+        #game-container {
+            width: 800px; height: 600px; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><circle cx="400" cy="300" r="280" stroke="%23fcd34d" stroke-width="2" fill="none" opacity="0.1"/><path d="M400,20 L400,580 M120,300 L680,300" stroke="%23fcd34d" stroke-width="1" opacity="0.1"/></svg>') var(--panel);
+            border: 8px solid #57534e; border-radius: 8px; position: relative; display: flex;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8); overflow: hidden;
+        }
+
+        /* Left Side: Grimoire / Inventory */
+        #inventory {
+            width: 250px; border-right: 4px solid #57534e; padding: 20px; display: flex; flex-direction: column; align-items: center; background: rgba(0,0,0,0.4); z-index: 10;
+        }
+        
+        .inv-title { font-family: 'UnifrakturMaguntia', cursive; font-size: 28px; color: var(--primary); margin-bottom: 20px; text-align: center; line-height: 1; }
+        
+        .rune-btn {
+            background: #1c1917; border: 2px solid #a8a29e; width: 100%; padding: 15px; margin-bottom: 15px;
+            cursor: pointer; position: relative; transition: 0.2s; text-align: left;
+        }
+        .rune-btn:hover { border-color: var(--primary); background: #292524; }
+        .rune-btn.selected { border-color: var(--primary); box-shadow: 0 0 15px var(--primary); }
+        .rune-name { font-size: 18px; font-weight: bold; color: #fbbf24; }
+        .rune-icon { position: absolute; right: 10px; top: 10px; width: 30px; height: 30px; }
+
+        .mat-counter { font-size: 24px; color: #4ade80; margin-top: auto; border: 2px dashed #4ade80; padding: 10px; width: 100%; text-align: center;}
+
+        /* Right Side: Boss / Grid */
+        #combat-zone {
+            flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 50px;
+        }
+
+        /* The Laser Beam Origin */
+        .boss-eye { position: absolute; top: 20px; font-family: 'UnifrakturMaguntia'; font-size: 32px; color: var(--laser); text-shadow: 0 0 20px var(--laser); }
+        
+        .laser-beam {
+            position: absolute; top: 60px; height: 400px; background: rgba(14, 165, 233, 0.3); border-left: 2px solid var(--laser); border-right: 2px solid var(--laser);
+            box-shadow: 0 0 30px var(--laser); z-index: 5; transition: width 0.3s, left 0.3s;
+        }
+
+        /* Crafting Grid */
+        #grid {
+            display: grid; grid-template-columns: repeat(5, 50px); grid-template-rows: repeat(5, 50px);
+            gap: 2px; background: #57534e; border: 4px solid var(--primary); z-index: 10; position: relative;
+        }
+
+        .cell { background: #1c1917; position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center;}
+        .cell:hover { background: #44403c; }
+
+        /* Rendered Rune visuals in grid */
+        .rune-shape { position: absolute; pointer-events: none; }
+        .shape-buy-call { width: 100%; height: 2px; background: #fbbf24; top: 50%; right: 0; width: 50%; transform-origin: left; transform: rotate(-45deg); box-shadow: 0 0 5px #fbbf24; }
+        .shape-sell-call { width: 100%; height: 2px; background: #ef4444; top: 50%; right: 0; width: 50%; transform-origin: left; transform: rotate(45deg); box-shadow: 0 0 5px #ef4444; }
+        .shape-flat { width: 100%; height: 2px; background: #fff; top: 50%; left: 0; }
+
+        /* Composite Shield Path Canvas */
+        #shield-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20;
+        }
+
+        .btn-forge {
+            position: absolute; right: 20px; bottom: 20px; background: #b91c1c; color: white; border: 2px solid #ef4444; padding: 15px 30px; font-family: 'UnifrakturMaguntia'; font-size: 24px; cursor: pointer; z-index: 30;
+        }
+        .btn-forge:hover { background: #ef4444; }
+
+        /* Modals */
+        .modal {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9);
+            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 50; text-align: center;
+        }
+        .window { background: var(--panel); border: 2px solid #fbbf24; padding: 30px; border-radius: 8px; max-width: 500px; }
+        .btn-menu { background: #1c1917; color: #fbbf24; border: 1px solid #fbbf24; padding: 15px; margin: 5px; font-family: inherit; font-size: 18px; cursor: pointer; width: 100%; text-align: left; }
+        .btn-menu:hover { background: #b45309; color: white; }
+
+    </style>
+</head>
+<body>
+
+    <h1 style="font-size:32px; color:#fbbf24; margin-bottom:5px; font-family:'UnifrakturMaguntia', cursive;">The Alchemist's Spreads</h1>
+    <p style="font-size:18px; color:#a8a29e; margin-top:0;">Forge geometric shields to mathematically block Volatility Lasers.</p>
+
+    <div id="game-container">
+        
+        <div id="inventory">
+            <div class="inv-title">Grimoire<br>of Derivatives</div>
+            
+            <!-- Tools -->
+            <button class="rune-btn" id="tool-buy-call" onclick="selectRune('buy_call', -15)">
+                <div class="rune-name">Buy Call</div>
+                <div style="font-size:12px; color:#9ca3af; margin-top:5px;">Diagonal Up-Right. Costs 15 Mat.</div>
+                <svg class="rune-icon" viewBox="0 0 100 100"><path d="M 0 100 L 50 100 L 100 50" stroke="#fbbf24" stroke-width="8" fill="none"/></svg>
+            </button>
+
+            <button class="rune-btn" id="tool-sell-call" onclick="selectRune('sell_call', 8)">
+                <div class="rune-name">Sell Call</div>
+                <div style="font-size:12px; color:#9ca3af; margin-top:5px;">Diagonal Dn-Right. Grants 8 Mat.</div>
+                <svg class="rune-icon" viewBox="0 0 100 100"><path d="M 0 50 L 50 50 L 100 100" stroke="#ef4444" stroke-width="8" fill="none"/></svg>
+            </button>
+
+            <button class="rune-btn" id="tool-buy-put" onclick="selectRune('buy_put', -15)">
+                <div class="rune-name">Buy Put</div>
+                <div style="font-size:12px; color:#9ca3af; margin-top:5px;">Diagonal Up-Left. Costs 15 Mat.</div>
+                <svg class="rune-icon" viewBox="0 0 100 100"><path d="M 100 100 L 50 100 L 0 50" stroke="#fbbf24" stroke-width="8" fill="none"/></svg>
+            </button>
+
+            <button class="rune-btn" id="tool-sell-put" onclick="selectRune('sell_put', 8)">
+                <div class="rune-name">Sell Put</div>
+                <div style="font-size:12px; color:#9ca3af; margin-top:5px;">Diagonal Dn-Left. Grants 8 Mat.</div>
+                <svg class="rune-icon" viewBox="0 0 100 100"><path d="M 100 50 L 50 50 L 0 100" stroke="#ef4444" stroke-width="8" fill="none"/></svg>
+            </button>
+
+            <button class="rune-btn" style="text-align:center; color:#ef4444; border-color:#ef4444;" onclick="clearGrid()">Clear Anvil</button>
+
+            <div class="mat-counter" id="mat-ui">Materials: <span id="mat-val">10</span></div>
+        </div>
+
+        <div id="combat-zone">
+            <div class="boss-eye">Eye of Volatility</div>
+            <!-- Laser dynamic width based on puzzle -->
+            <div id="laser" class="laser-beam" style="width:100px; left: 220px;"></div>
+
+            <!-- The Anvil (5x5 grid) -->
+            <div id="grid"></div>
+            
+            <canvas id="shield-canvas" width="550" height="600"></canvas>
+            
+            <button class="btn-forge" onclick="evaluateShield()">FORGE & BLOCK</button>
+        </div>
+
+        <!-- Modals -->
+        <div id="menu-modal" class="modal" style="display:flex;">
+            <div class="window">
+                <h2 style="color:#fbbf24; font-family:'UnifrakturMaguntia';">Puzzle Selection</h2>
+                <button class="btn-menu" onclick="startLevel(1)">1. The Iron Condor Forge<br><span style="font-size:12px; color:#9ca3af;">Boss fires a wide, continuous laser. You must combine 4 distinct runes to block the entire width.</span></button>
+                <button class="btn-menu" onclick="startLevel(2)">2. The Debit Spread Squeeze<br><span style="font-size:12px; color:#9ca3af;">You only have 10 Materials. A 'Buy Call' costs 15! You must finance the shield by 'Selling' upside.</span></button>
+                <button class="btn-menu" onclick="startLevel(3)">3. The Straddle Spike<br><span style="font-size:12px; color:#9ca3af;">A highly concentrated, thin laser beam. Block it directly down the centre.</span></button>
+            </div>
+        </div>
+
+        <div id="end-modal" class="modal">
+            <div class="window">
+                <h2 id="end-title" style="font-family:'UnifrakturMaguntia'; font-size:32px;">Result</h2>
+                <p id="end-desc" style="font-size:20px;"></p>
+                <button class="btn-menu" style="text-align:center;" onclick="location.reload()">Return to Alchemy lab</button>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+    // System Data
+    const GRID_SIZE = 5;
+    let gridData = Array(GRID_SIZE).fill(null).map(()=>Array(GRID_SIZE).fill(null)); 
+    // Cells store { type: 'buy_call', x, y }
+    
+    let activeRune = null;
+    let activeCost = 0;
+    
+    let baseMats = 10;
+    let currentMats = 10;
+    let currentLvl = 1;
+
+    let lastInputTime = 0;
+    function checkThrottle() {
+        let now = performance.now();
+        if (now - lastInputTime < 100) return false;
+        lastInputTime = now;
+        return true;
+    }
+
+    // Laser properties (cols)
+    let laserStartCol = 1;
+    let laserEndCol = 3; 
+
+    const canvas = document.getElementById('shield-canvas');
+    const ctx = canvas.getContext('2d');
+    const gridEl = document.getElementById('grid');
+
+    // Init Grid
+    for(let y=0; y<GRID_SIZE; y++){
+        for(let x=0; x<GRID_SIZE; x++){
+            let c = document.createElement('div');
+            c.className = 'cell';
+            c.id = `cell-${x}-${y}`;
+            c.onclick = () => placeRune(x, y);
+            gridEl.appendChild(c);
+        }
+    }
+
+    function selectRune(type, cost) {
+        if (!checkThrottle()) return;
+        document.querySelectorAll('.rune-btn').forEach(btn => btn.classList.remove('selected'));
+        let btn = document.getElementById('tool-' + type.replace('_', '-'));
+        if(btn) btn.classList.add('selected');
+        
+        activeRune = type;
+        activeCost = cost;
+    }
+
+    function placeRune(x, y) {
+        if (!activeRune || !checkThrottle()) return;
+        
+        // Remove existing
+        if (gridData[y][x]) {
+            let refundObj = getRuneCost(gridData[y][x]);
+            currentMats -= refundObj; // inverse logic. if cost was -15, refund gives +15.
+            gridData[y][x] = null;
+        }
+
+        // Apply new
+        // If activeCost is negative, check if we have enough
+        if (activeCost < 0 && currentMats + activeCost < 0) {
+            flashUI();
+            return;
+        }
+
+        currentMats += activeCost;
+        gridData[y][x] = activeRune;
+        
+        updateGridUI();
+    }
+
+    function getRuneCost(type) {
+        if(type==='buy_call'||type==='buy_put') return -15;
+        if(type==='sell_call'||type==='sell_put') return 8;
+        return 0;
+    }
+
+    function clearGrid() {
+        for(let y=0; y<GRID_SIZE; y++){
+            for(let x=0; x<GRID_SIZE; x++){
+                gridData[y][x] = null;
+            }
+        }
+        currentMats = baseMats;
+        updateGridUI();
+    }
+
+    function flashUI() {
+        let el = document.getElementById('mat-ui');
+        el.style.borderColor = '#ef4444'; el.style.color = '#ef4444';
+        setTimeout(() => { el.style.borderColor = '#4ade80'; el.style.color = '#4ade80'; }, 300);
+    }
+
+    function updateGridUI() {
+        document.getElementById('mat-val').innerText = currentMats;
+        
+        for(let y=0; y<GRID_SIZE; y++){
+            for(let x=0; x<GRID_SIZE; x++){
+                let c = document.getElementById(`cell-${x}-${y}`);
+                c.innerHTML = '';
+                let type = gridData[y][x];
+                if (type) {
+                    let r = document.createElement('div');
+                    r.className = 'rune-shape shape-' + type.replace('_', '-');
+                    c.appendChild(r);
+                }
+            }
+        }
+        drawCompositeShape();
+    }
+
+    // Mathematical rendering of Array combinations
+    let netPayoff = new Array(GRID_SIZE).fill(0);
+    
+    function drawCompositeShape() {
+        // Evaluate algebraic sum across grid columns (Proxy for array combiner)
+        netPayoff.fill(0);
+        
+        for(let x=0; x<GRID_SIZE; x++){
+            for(let y=0; y<GRID_SIZE; y++){
+                let rune = gridData[y][x];
+                if(rune){
+                    // If buy_call placed at x. Payoff is 0 left of x. Increases slope 1 right of x.
+                    if(rune === 'buy_call') {
+                        for(let t=x; t<GRID_SIZE; t++) netPayoff[t] += (t-x);
+                    }
+                    if(rune === 'buy_put') {
+                        for(let t=x; t>=0; t--) netPayoff[t] += (x-t);
+                    }
+                    if(rune === 'sell_call') {
+                        for(let t=x; t<GRID_SIZE; t++) netPayoff[t] -= (t-x);
+                    }
+                    if(rune === 'sell_put') {
+                        for(let t=x; t>=0; t--) netPayoff[t] -= (x-t);
+                    }
+                }
+            }
+        }
+
+        // Draw Line over grid mapping payoff
+        ctx.clearRect(0,0, canvas.width, canvas.height);
+        
+        let gridRect = gridEl.getBoundingClientRect();
+        let cvsRect = canvas.getBoundingClientRect();
+        let osX = gridRect.left - cvsRect.left;
+        let osY = gridRect.top - cvsRect.top;
+
+        // Visual offset mapping
+        let startX = osX + 25; // center of cell 0
+        let stepX = 52; // cell + gap
+        let startY = osY + gridRect.height/2; // Base line middle
+        let scaleY = 50; // Points per Y
+
+        ctx.beginPath();
+        ctx.strokeStyle = '#4ade80';
+        ctx.lineWidth = 6;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#4ade80';
+
+        let hasData = false;
+        
+        for(let i=0; i<GRID_SIZE; i++){
+            if(netPayoff[i] !== 0) hasData = true;
+            let px = startX + (i * stepX);
+            let py = startY - (netPayoff[i] * scaleY);
+            if(i===0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        
+        if (hasData || gridData.flat().some(x=>x)) ctx.stroke();
+    }
+
+    function startLevel(lvl) {
+        currentLvl = lvl;
+        document.getElementById('menu-modal').style.display = 'none';
+        
+        if(lvl === 1) { 
+            baseMats = currentMats = 50; 
+            laserStartCol = 1; laserEndCol = 3; 
+        } // Iron condor
+        if(lvl === 2) { 
+            baseMats = currentMats = 10; 
+            laserStartCol = 2; laserEndCol = 4; 
+        } // Debit spread squeeze
+        if(lvl === 3) { 
+            baseMats = currentMats = 30; 
+            laserStartCol = 2; laserEndCol = 2; 
+        } // Straddle spike
+
+        clearGrid();
+        
+        // Render Laser UI
+        let laser = document.getElementById('laser');
+        let lWidth = ((laserEndCol - laserStartCol) + 1) * 52;
+        let lLeft = (laserStartCol * 52) + 20; // offsets roughly
+        laser.style.width = lWidth + 'px';
+        laser.style.left = `calc(50% - 125px + ${laserStartCol*52}px)`; // Relative to central grid placement
+    }
+
+    function evaluateShield() {
+        if (!checkThrottle()) return;
+        // Logic: Shield perfectly blocks laser area if netPayoff is > 0 precisely within laser bounds
+        // and <= 0 outside laser bounds (bounded risk).
+        
+        let success = true;
+        let reason = "";
+
+        // Check columns
+        for(let i=0; i<GRID_SIZE; i++){
+            let isLaserZone = (i >= laserStartCol && i <= laserEndCol);
+            let payoff = netPayoff[i];
+
+            if (isLaserZone && payoff <= 0) {
+                success = false;
+                reason = "Your geometric shield failed to cover the laser impact zone (No UPSIDE where needed).";
+                break;
+            }
+            if (!isLaserZone && payoff < 0) {
+                success = false;
+                reason = "Your shield leaks energy outside the target zone (UNHEDGED DOWNSIDE RISK detected). Laser reflected and destroyed you.";
+                break;
+            }
+        }
+
+        if (success && gridData.flat().filter(Boolean).length === 0) {
+            success = false; reason = "You placed no runes. You burned entirely.";
+        }
+
+        let m = document.getElementById('end-modal');
+        let t = document.getElementById('end-title');
+        let d = document.getElementById('end-desc');
+
+        if (success) {
+            t.innerText = "Shield Forged!";
+            t.style.color = "#4ade80";
+            if(currentLvl===1) d.innerText = "You created the Iron Condor geometry, perfectly blocking the wide, flat volatility band!";
+            if(currentLvl===2) d.innerText = "You successfully financed your primary shield (Buy Call) by selling upside geometry (Sell Call), creating a Bull Call Spread puzzle resolution!";
+            if(currentLvl===3) d.innerText = "The sharp inverted-V geometry of a Straddle perfectly intercepted the direct laser strike.";
+        } else {
+            t.innerText = "Shield Shattered";
+            t.style.color = "#ef4444";
+            d.innerText = reason;
+        }
+
+        m.style.display = 'flex';
+    }
+
+</script>
+
+</body>
+</html>

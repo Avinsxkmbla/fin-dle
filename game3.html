@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KaChing: Portfolio RPG</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            background-color: #0f172a; color: #f8fafc;
+            font-family: 'Press Start 2P', cursive;
+            display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px;
+        }
+
+        #game-container {
+            width: 800px; height: 600px;
+            background: #1e293b; border: 4px solid #4ade80; border-radius: 8px;
+            position: relative; display: flex; flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden;
+        }
+
+        /* Screen States */
+        .screen {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            display: none; flex-direction: column;
+        }
+
+        /* Menu Screen */
+        .btn-menu {
+            background: #0f172a; color: #4ade80; border: 2px solid #4ade80;
+            padding: 15px; margin: 10px 20px; font-family: inherit; font-size: 14px; cursor: pointer; text-align: left;
+        }
+        .btn-menu:hover { background: #4ade80; color: #0f172a; }
+
+        /* Combat Layout */
+        #combat-top { flex: 2; border-bottom: 2px solid #334155; display: flex; align-items: center; justify-content: center; position: relative;}
+        #combat-middle { flex: 1; border-bottom: 2px solid #334155; padding: 10px; display: flex; justify-content: space-around; align-items: flex-end; }
+        #combat-bottom { flex: 1; padding: 10px; display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+
+        /* Sprites & UI */
+        .boss-sprite { width: 150px; height: 150px; border: 2px solid #ef4444; background: #7f1d1d; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: white; text-align: center; }
+        .boss-hp { position: absolute; top: 20px; text-align: center; }
+        .hp-bar { width: 300px; height: 10px; background: #334155; border: 1px solid white; margin-top: 5px;}
+        .hp-fill { height: 100%; background: #ef4444; width: 100%; transition: 0.3s; }
+
+        .party-member { width: 80px; text-align: center; }
+        .sprite { width: 60px; height: 60px; margin: 0 auto; border: 2px solid white; display:flex; align-items:center; justify-content:center;font-size:10px; }
+        .stat-bar { height: 6px; background: #334155; border: 1px solid white; margin-top: 5px; }
+        .stat-fill { height: 100%; background: #4ade80; width: 100%; transition: 0.3s; }
+        
+        .name { font-size: 8px; margin-top: 5px; color: #cbd5e1; }
+
+        .action-box { background: #0f172a; border: 2px solid #4ade80; padding: 10px; }
+        .log-box { background: #0f172a; border: 2px solid #94a3b8; padding: 10px; font-size: 10px; overflow-y: auto; line-height: 1.5; color: #e2e8f0;}
+        
+        .btn-action { 
+            background: transparent; border: none; color: white; font-family: inherit; font-size: 12px; display: block; width: 100%; text-align: left; padding: 8px; cursor: pointer;
+        }
+        .btn-action:hover { background: #334155; }
+        .btn-action:disabled { color: #475569; pointer-events: none; }
+
+        .active-turn { outline: 2px solid #fbbf24; outline-offset: 4px; box-shadow: 0 0 10px #fbbf24; }
+        
+        /* Build Screen */
+        .build-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 20px; }
+        .class-card {
+            background: #0f172a; border: 1px solid #334155; padding: 15px; cursor: pointer; text-align: center;
+        }
+        .class-card.selected { border-color: #4ade80; background: #166534; }
+        
+        .dmg-text { color: #ef4444; position: absolute; font-size: 20px; font-weight: bold; pointer-events: none; animation: floatUp 1s forwards; }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-30px); } }
+
+        /* Puzzle Screen */
+        #puzzle-screen { padding: 40px; text-align: center; }
+
+    </style>
+</head>
+<body>
+
+    <h1 style="font-size:20px; color:#4ade80; margin-bottom:5px;">Dungeon of Diversification</h1>
+    <p style="font-size:10px; color:#94a3b8;">Covariance is your armor. Correlation is your death.</p>
+
+    <div id="game-container">
+        <!-- 1. Menu -->
+        <div id="screen-menu" class="screen" style="display: flex;">
+            <h2 style="text-align:center; color:#fbbf24; margin-top:40px;">Select Encounter</h2>
+            
+            <button class="btn-menu" onclick="startLevel(1)">
+                1. The Tech Bubble Boss<br><br>
+                <span style="font-size:8px; color:#94a3b8;">Boss casts massive AoE against Growth Stocks. Learn to use a Tank (Bonds).</span>
+            </button>
+            <button class="btn-menu" onclick="startLevel(2)">
+                2. Flight to Safety<br><br>
+                <span style="font-size:8px; color:#94a3b8;">Global Panic paralyses all Stocks. Bonds and Gold gain massive buffs.</span>
+            </button>
+            <button class="btn-menu" onclick="startLevel(3)">
+                3. The Efficient Frontier Trial<br><br>
+                <span style="font-size:8px; color:#94a3b8;">Gatekeeper puzzle. Optimize Volatility vs Return to enter the dungeon.</span>
+            </button>
+        </div>
+
+        <!-- 2. Builder -->
+        <div id="screen-build" class="screen">
+            <h2 style="text-align:center; font-size:16px;">Assemble 4 Assets</h2>
+            <div style="text-align:center; font-size:10px; color:#94a3b8; margin-bottom:10px;">Click to Add. Max 4. Party Size: <span id="party-count">0</span>/4</div>
+            <div class="build-grid">
+                <div class="class-card" onclick="addParty('growth')" style="border-color:#3b82f6;">
+                    <div style="font-size:14px; margin-bottom:10px; color:#3b82f6;">GROWTH STOCK</div>
+                    <div style="font-size:8px; line-height:1.5;">High Dmg (50). Very Low HP (30).<br>Highly correlated to Market crashes.</div>
+                </div>
+                <div class="class-card" onclick="addParty('bank')" style="border-color:#8b5cf6;">
+                    <div style="font-size:14px; margin-bottom:10px; color:#8b5cf6;">VALUE STOCK</div>
+                    <div style="font-size:8px; line-height:1.5;">Med Dmg (30). Med HP (50).<br>Different sector, moderate correlation.</div>
+                </div>
+                <div class="class-card" onclick="addParty('bond')" style="border-color:#f59e0b;">
+                    <div style="font-size:14px; margin-bottom:10px; color:#f59e0b;">TREASURY BOND</div>
+                    <div style="font-size:8px; line-height:1.5;">Zero Dmg (5). High HP (120).<br>Inverse Correlation (Tank). Taunts.</div>
+                </div>
+                <div class="class-card" onclick="addParty('gold')" style="border-color:#facc15;">
+                    <div style="font-size:14px; margin-bottom:10px; color:#facc15;">GOLD</div>
+                    <div style="font-size:8px; line-height:1.5;">Weak Dmg (10). Low HP (40).<br>Healer. Uncorrelated safe haven.</div>
+                </div>
+            </div>
+            <div style="text-align:center; margin-top:20px;">
+                <button class="btn-menu" id="btn-start-battle" disabled style="width:200px; text-align:center;" onclick="initBattle()">ENTRANCE</button>
+            </div>
+        </div>
+
+        <!-- 3. Puzzle -->
+        <div id="screen-puzzle" class="screen">
+            <h2 style="color:#fbbf24;">Puzzle of Efficiency</h2>
+            <p style="font-size:12px; line-height:1.8;">"I weigh your risk against your reward."<br><br>The locked door demands your party's Volatility score be <strong>BELOW 30%</strong>, but aggregate expected Return must be <strong>>= 6%</strong>.</p>
+            
+            <div style="background:#0f172a; border: 1px solid #4ade80; padding:15px; text-align:left; font-size:10px; margin: 20px 40px;">
+                Expected Return: <span id="puz-ret">0%</span><br><br>
+                Portfolio Volatility: <span id="puz-vol" style="color:#ef4444">0%</span>
+            </div>
+
+            <button class="btn-menu" id="btn-unlock" disabled onclick="passPuzzle()" style="text-align:center; width:200px; margin: 0 auto;">ENTER DOOR</button>
+            <button class="btn-menu" onclick="restartMenu()" style="border-color:#ef4444; color:#ef4444; text-align:center; width:200px; margin: 10px auto;">Retreat</button>
+        </div>
+
+        <!-- 4. Combat -->
+        <div id="screen-combat" class="screen">
+            <div id="combat-top">
+                <div class="boss-hp">
+                    <div style="font-size:14px;" id="boss-name">BOSS</div>
+                    <div class="hp-bar"><div class="hp-fill" id="boss-hp-fill"></div></div>
+                </div>
+                <div class="boss-sprite" id="boss-sprite">BOSS SPRITE</div>
+            </div>
+
+            <div id="combat-middle" id="party-container">
+                <!-- Injected via JS -->
+            </div>
+
+            <div id="combat-bottom">
+                <div class="action-box">
+                    <div style="color:#94a3b8; font-size:10px; border-bottom:1px solid #334155; padding-bottom:5px; margin-bottom:5px;">COMMAND</div>
+                    <button class="btn-action" id="cmd-atk" onclick="execCommand('attack')">Attack</button>
+                    <button class="btn-action" id="cmd-spl" onclick="execCommand('special')">Special Skill (Taunt/Heal)</button>
+                    <button class="btn-action" id="cmd-def" onclick="execCommand('defend')">Defend (Hold Cash)</button>
+                </div>
+                <div class="log-box" id="combat-log">
+                    Encounter Started!
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // System Data
+    const CLASSES = {
+        'growth': { name: 'Growth', hp: 30, maxHp: 30, atk: 50, color: '#3b82f6', ret: 0.12, vol: 0.30 },
+        'bank':   { name: 'Value', hp: 50, maxHp: 50, atk: 30, color: '#8b5cf6', ret: 0.08, vol: 0.15 },
+        'bond':   { name: 'Bond', hp: 120, maxHp: 120, atk: 5, color: '#f59e0b', ret: 0.04, vol: 0.05 },
+        'gold':   { name: 'Gold', hp: 40, maxHp: 40, atk: 10,  color: '#facc15', ret: 0.05, vol: 0.15 }
+    };
+
+    let party = [];
+    let currentLvl = 1;
+    let boss = null;
+    let turnIndex = 0; // 0-3 player, 4 = boss
+    let tauntActive = false; // direct attacks to bond
+    let globalPanic = false; // Lvl 2 modifier
+    let isAnimating = false; // Prevents UI click-spamming during timeouts
+
+    let lastInputTime = 0;
+    const THROTTLE_MS = 200;
+
+    function checkThrottle() {
+        let now = performance.now();
+        if (now - lastInputTime < THROTTLE_MS) return false;
+        lastInputTime = now;
+        return true;
+    }
+
+    // Covariance simple lookup
+    function getPartyVolAndRet() {
+        let ret = 0; let volSum = 0;
+        let pSize = party.length; if(pSize===0) return {ret:0, vol:0};
+        
+        party.forEach(p => {
+            let cls = CLASSES[p];
+            ret += cls.ret;
+            volSum += cls.vol;
+        });
+        
+        let avgRet = ret / pSize;
+        
+        let isCorrelated = (party.filter(p=>p==='growth').length + party.filter(p=>p==='bank').length) === pSize;
+        let avgVol = volSum / pSize;
+
+        if (!isCorrelated) {
+            avgVol = avgVol * 0.6; // 40% reduction in risk!
+        }
+
+        return { ret: avgRet * 100, vol: avgVol * 100 };
+    }
+
+    const logEl = document.getElementById('combat-log');
+    function logMsg(msg) {
+        logEl.innerHTML += `<div>> ${msg}</div>`;
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Navigation
+    function show(id) { document.querySelectorAll('.screen').forEach(e=>e.style.display='none'); document.getElementById(id).style.display = 'flex'; }
+    function restartMenu() { party = []; show('screen-menu'); }
+
+    function startLevel(lvl) {
+        if (!checkThrottle()) return;
+        currentLvl = lvl;
+        party = [];
+        document.getElementById('party-count').innerText = "0";
+        document.getElementById('btn-start-battle').disabled = true;
+        show('screen-build');
+        globalPanic = false;
+        
+        if (currentLvl === 1 || currentLvl === 3) {
+            boss = { name: "Dot-Com Dragon", hp: 300, maxHp: 300, atk: 25, type: 'tech_crash' };
+        } else if (currentLvl === 2) {
+            boss = { name: "Systemic Bear", hp: 400, maxHp: 400, atk: 15, type: 'global_panic' };
+        }
+    }
+
+    function addParty(type) {
+        if (!checkThrottle()) return;
+        if(party.length >= 4) return;
+        party.push(type);
+        document.getElementById('party-count').innerText = party.length;
+        
+        if(party.length === 4) {
+            document.getElementById('btn-start-battle').disabled = false;
+            
+            if (currentLvl === 3) {
+                let stats = getPartyVolAndRet();
+                document.getElementById('puz-ret').innerText = stats.ret.toFixed(1) + '%';
+                let volEl = document.getElementById('puz-vol');
+                volEl.innerText = stats.vol.toFixed(1) + '%';
+                
+                let pass = (stats.ret >= 6.0 && stats.vol <= 30.0);
+                volEl.style.color = pass ? '#4ade80' : '#ef4444';
+                
+                document.getElementById('btn-unlock').disabled = !pass;
+            }
+        }
+    }
+
+    function initBattle() {
+        if (!checkThrottle()) return;
+        if (currentLvl === 3 && document.getElementById('screen-puzzle').style.display !== 'flex') {
+            show('screen-puzzle');
+            return;
+        }
+
+        logEl.innerHTML = `Encounter Started vs ${boss.name}!`;
+        party = party.map((type, idx) => {
+            return { id: idx, type: type, ...CLASSES[type] }; 
+        });
+
+        turnIndex = 0;
+        tauntActive = false;
+        isAnimating = false;
+        
+        if (currentLvl === 2) {
+            globalPanic = true;
+            logMsg("GLOBAL PANIC APPLIED! All Stocks Paralyzed!");
+        }
+
+        show('screen-combat');
+        updateCombatUI();
+        processTurnQueue();
+    }
+
+    function passPuzzle() {
+        if (!checkThrottle()) return;
+        logMsg("Efficient Frontier unlocked space-time! Boss vulnerable.");
+        initBattle();
+    }
+
+    function updateCombatUI() {
+        // Boss
+        document.getElementById('boss-name').innerText = boss.name;
+        document.getElementById('boss-hp-fill').style.width = Math.max(0, (boss.hp / boss.maxHp)*100) + '%';
+        let spr = document.getElementById('boss-sprite');
+        spr.innerText = boss.hp > 0 ? "O_O" : "X_X";
+
+        // Party
+        const c = document.getElementById('combat-middle');
+        c.innerHTML = '';
+        party.forEach((p, idx) => {
+            let isDead = p.hp <= 0;
+            let activeUI = (!isDead && idx === turnIndex) ? 'active-turn' : '';
+            if (isDead) activeUI = '';
+
+            let hpPct = Math.max(0, (p.hp / p.maxHp)*100);
+            
+            c.innerHTML += `
+            <div class="party-member" id="char-${idx}">
+                <div class="sprite ${activeUI}" style="border-color:${p.color}; opacity:${isDead?0.3:1}">${isDead?'RIP':p.name.substring(0,3)}</div>
+                <div class="stat-bar"><div class="stat-fill" style="width:${hpPct}%"></div></div>
+                <div class="name">${p.hp}/${p.maxHp}</div>
+            </div>`;
+        });
+        
+        btnState();
+    }
+
+    function processTurnQueue() {
+        updateCombatUI();
+        if(checkWinLoss()) return;
+
+        if (turnIndex === 4) { // Boss Turn
+            isAnimating = true;
+            setTimeout(bossTurn, 1000);
+        } else {
+            // Player Turn
+            let p = party[turnIndex];
+            if (p.hp <= 0) {
+                turnIndex++; processTurnQueue(); return; // Skip dead
+            }
+
+            if (globalPanic && (p.type === 'growth' || p.type === 'bank')) {
+                logMsg(`${p.name} is paralyzed by Global Panic (Illiquidity)!`);
+                isAnimating = true;
+                setTimeout(() => { isAnimating = false; turnIndex++; processTurnQueue(); }, 1000);
+                return;
+            }
+            logMsg(`${p.name}'s turn...`);
+        }
+    }
+
+    function btnState() {
+        let isP = turnIndex < 4 && !isAnimating;
+        document.getElementById('cmd-atk').disabled = !isP;
+        document.getElementById('cmd-def').disabled = !isP;
+        let p = isP ? party[turnIndex] : null;
+        
+        let splCmd = document.getElementById('cmd-spl');
+        splCmd.disabled = true;
+        if(isP && p && p.hp>0) {
+            if(p.type === 'bond') { splCmd.innerText = "Taunt (Draw Aggro)"; splCmd.disabled = false; }
+            if(p.type === 'gold') { splCmd.innerText = "Heal Party"; splCmd.disabled = false; }
+            if(p.type === 'growth'|| p.type === 'bank') { splCmd.innerText = "(No Skill)"; }
+        }
+    }
+
+    // Defensive Lock against Spam Clicking during transitions
+    function execCommand(cmd) {
+        if (!checkThrottle() || isAnimating) return;
+        isAnimating = true;
+        btnState();
+
+        let p = party[turnIndex];
+        let dmgMult = 1;
+        if (currentLvl === 2 && (p.type==='bond' || p.type==='gold')) dmgMult = 2;
+
+        if (cmd === 'attack') {
+            let d = p.atk * dmgMult;
+            boss.hp -= d;
+            logMsg(`${p.name} attacks for ${d}!`);
+        } else if (cmd === 'defend') {
+            logMsg(`${p.name} defends (reduces incoming damage).`);
+        } else if (cmd === 'special') {
+            if (p.type === 'bond') {
+                tauntActive = true; logMsg(`Treasury Bond applies Taunt! Inverse correlation active.`);
+            } else if (p.type === 'gold') {
+                party.forEach(a => { if(a.hp>0){ a.hp=Math.min(a.maxHp, a.hp+20); } });
+                logMsg(`Gold heals the portfolio by 20 HP.`);
+            }
+        }
+
+        turnIndex++; 
+        setTimeout(() => { isAnimating = false; processTurnQueue(); }, 500);
+    }
+
+    function bossTurn() {
+        if(boss.hp <= 0) return;
+        logMsg(`--- ${boss.name} attacks! ---`);
+
+        if (boss.type === 'tech_crash') {
+            logMsg(`Boss casts "NASDAQ CRASH" AoE!`);
+            party.forEach(p => {
+                if (p.hp > 0) {
+                    let d = boss.atk;
+                    if (p.type === 'growth') d *= 4; 
+                    if (p.type === 'bank') d *= 1.5;
+                    if (p.type === 'bond') d *= 0.5; 
+                    if (p.type === 'gold') d *= 0.8; 
+                    
+                    p.hp -= d;
+                    logMsg(`${p.name} takes ${d} DMG!`);
+                }
+            });
+        } else if (boss.type === 'global_panic') {
+            let target = null;
+            if (tauntActive) {
+                target = party.find(p=>p.type==='bond' && p.hp > 0);
+            }
+            if(!target){
+                let alives = party.filter(p=>p.hp>0);
+                target = alives[Math.floor(Math.random()*alives.length)];
+            }
+            if(target) {
+                target.hp -= 40;
+                logMsg(`${boss.name} slams ${target.name} for 40 DMG!`);
+            }
+        }
+        
+        tauntActive = false; 
+        turnIndex = 0;
+        isAnimating = false;
+        processTurnQueue();
+    }
+
+    function checkWinLoss() {
+        let alive = party.filter(p=>p.hp>0).length;
+        if(alive === 0) {
+            logMsg("<span style='color:#ef4444'>PARTY WIPED. LACK OF DIVERSIFICATION IS FATAL.</span>");
+            setTimeout(restartMenu, 4000);
+            return true;
+        }
+        if (boss.hp <= 0) {
+            logMsg("<span style='color:#4ade80'>BOSS DEFEATED! UNCORRELATED ASSETS SAVED THE PORTFOLIO!</span>");
+            setTimeout(restartMenu, 4000);
+            return true;
+        }
+        return false;
+    }
+
+</script>
+
+</body>
+</html>

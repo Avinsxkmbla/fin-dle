@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KaChing: The Shopkeeper RPG</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        :root {
+            --bg: #1e1e24;
+            --hud: #2b2b36;
+            --primary: #4ade80;
+            --danger: #ef4444;
+            --warn: #facc15;
+            --text: #f8fafc;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Press Start 2P', cursive;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #game-container {
+            position: relative;
+            background: #2a2a35;
+            border: 4px solid #444;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+            width: 800px;
+            height: 600px;
+        }
+
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+        }
+
+        /* HUD */
+        #hud {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            background: rgba(0,0,0,0.8);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            border-bottom: 2px solid #555;
+            z-index: 10;
+        }
+
+        .stat { display: flex; align-items: center; gap: 8px; }
+        .stat-val { color: var(--primary); }
+        .timer { color: var(--warn); }
+
+        /* Modals */
+        .modal {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .window {
+            background: #2b2b36;
+            border: 4px solid var(--primary);
+            padding: 24px;
+            border-radius: 8px;
+            max-width: 500px;
+            line-height: 1.6;
+        }
+
+        h2 { margin-top: 0; font-size: 16px; color: var(--primary); margin-bottom: 20px; }
+        p { font-size: 10px; margin-bottom: 15px; color: #cbd5e1; }
+
+        .btn {
+            background: var(--bg);
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            padding: 12px 20px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+        .btn:hover { background: var(--primary); color: var(--bg); }
+        .btn:disabled { border-color: #555; color: #555; cursor: not-allowed; background: var(--bg); }
+
+        .btn-danger { color: var(--danger); border-color: var(--danger); }
+        .btn-danger:hover { background: var(--danger); color: white; }
+
+        /* Level Select */
+        .level-card {
+            background: rgba(255,255,255,0.05);
+            padding: 15px; border: 2px solid #555; margin-bottom: 10px;
+            cursor: pointer; transition: 0.2s; text-align: left;
+        }
+        .level-card:hover { border-color: var(--warn); background: rgba(255,255,255,0.1); }
+        .lvl-title { color: var(--warn); font-size: 12px; margin-bottom: 5px; }
+        .lvl-desc { font-size: 8px; color: #94a3b8; }
+
+        /* Trading Window */
+        #trade-panel {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left;
+        }
+        .price-box { background: rgba(0,0,0,0.5); padding: 10px; border: 1px solid #555; font-size: 10px; margin-bottom: 10px; }
+        
+        .limit-input-wrap { margin-top: 10px; }
+        input[type="number"] {
+            background: black; color: white; border: 2px solid #555; padding: 10px; font-family: 'Press Start 2P'; font-size: 12px; width: 100%; box-sizing: border-box;
+        }
+
+        /* Float Animations */
+        @keyframes floatText { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-40px); } }
+        .floating-text {
+            position: absolute; font-size: 12px; font-weight: bold; pointer-events: none;
+            animation: floatText 1.5s ease-out forwards; z-index: 5;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1 style="font-size:20px; color:#4ade80;">KaChing: The Shopkeeper RPG</h1>
+    <p style="font-size:10px; margin-top:0; color:#94a3b8;">WASD/Arrows to Move. Touch NPCs to Trade.</p>
+
+    <div id="game-container">
+        <!-- HUD -->
+        <div id="hud" style="display:none;">
+            <div class="stat">GOLD: <span id="hud-gold" class="stat-val">1000</span></div>
+            <div class="stat">INV VALUE: <span id="hud-inv" class="stat-val">0</span></div>
+            <div class="stat">TIME: <span id="hud-time" class="timer">60</span></div>
+        </div>
+
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+        <!-- Floating Text Container -->
+        <div id="float-container"></div>
+
+        <!-- Start Menu / Level Select -->
+        <div id="menu-modal" class="modal">
+            <div class="window" style="max-width: 600px;">
+                <h2>Select Challenge</h2>
+                
+                <div class="level-card" onclick="startLevel(1)">
+                    <div class="lvl-title">1. The Spread Monster's Lair</div>
+                    <div class="lvl-desc">Market Makers widen the Bid/Ask spread drastically. Market Orders will summon the Spread Monster. Rely on Limit Orders.</div>
+                </div>
+
+                <div class="level-card" onclick="startLevel(2)">
+                    <div class="lvl-title">2. The Illiquid Desert</div>
+                    <div class="lvl-desc">Very few NPCs spawn and they move incredibly slowly. You lack the time to wait for a Limit hit. Time is money.</div>
+                </div>
+
+                <div class="level-card" onclick="startLevel(3)">
+                    <div class="lvl-title">3. The Flash Crash</div>
+                    <div class="lvl-desc">Extreme volatility. Prices cycle wildly every second. A Market Order is suicide. You must use Limit Buy.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trade Modal -->
+        <div id="trade-modal" class="modal" style="display:none;">
+            <div class="window" style="width:500px;">
+                <h2 id="trade-title">Market Maker Interaction</h2>
+                
+                <div id="trade-panel">
+                    <div>
+                        <div class="price-box">
+                            <span style="color:#ef4444">NPC SELLS (Ask):</span><br><br>
+                            <span id="tm-ask" style="font-size:16px;">$100</span>
+                        </div>
+                        <button class="btn btn-danger" style="width:100%;" onclick="executeMarketBuy()">MARKET BUY<br><br><span style="font-size:6px;">Instant. Pays Ask.</span></button>
+                    </div>
+
+                    <div>
+                        <div class="price-box" style="border-color:var(--primary);">
+                            <span style="color:#4ade80">NPC BUYS (Bid):</span><br><br>
+                            <span id="tm-bid" style="font-size:16px;">$90</span>
+                        </div>
+                        <div class="limit-input-wrap">
+                            <label style="font-size:8px; color:#94a3b8;">YOUR LIMIT PRICE:</label>
+                            <input type="number" id="inp-limit" value="95">
+                        </div>
+                        <button class="btn" style="width:100%; margin-top:5px;" onclick="placeLimitOrder()">LIMIT BUY<br><br><span style="font-size:6px;">Costs 3s Time.</span></button>
+                    </div>
+                </div>
+
+                <div style="margin-top:20px; text-align:center;">
+                    <button class="btn" onclick="closeTrade()">LEAVE</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-modal" class="modal" style="display:none;">
+            <div class="window">
+                <h2 id="end-title">Day Complete</h2>
+                <div style="font-size:14px; margin-bottom:10px;">Starting Net Worth: <span style="color:#4ade80">1000</span></div>
+                <div style="font-size:14px; margin-bottom:20px;">Ending Net Worth: <span id="end-nw" style="color:#4ade80">0</span></div>
+                <p id="end-desc" style="font-size:12px; line-height:1.6;"></p>
+                <button class="btn" onclick="location.reload()">Return to Menu</button>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // State Guards & Loop variables
+    let gameState = "MENU"; // MENU, PLAY, TRADE, END
+    let currentLevel = 1;
+    let gold = 1000;
+    let inventory = 0; // quantity of stock
+    let timeLeft = 60;
+    
+    // Fixed Math Accumulator variables
+    let lastTime = 0;
+    let secondsTimer = 0;
+    let physicsAccumulator = 0;
+    const FIXED_PHYSICS_STEP = 1/60; // Deterministic 60fps tick logic
+
+    // Entities & Optimization Cache
+    let activeNPC = null;
+    let pendingLimits = []; // {price, visX, visY}
+    
+    const player = {
+        x: 400, y: 300, size: 24, speed: 200, color: '#3b82f6',
+        vx: 0, vy: 0
+    };
+
+    let npcs = [];
+    let spreadMonsters = []; // particles
+
+    const keys = { w:false, a:false, s:false, d:false };
+
+    // Cached Global Rects (Stops GC Thrashing in the hot loops)
+    const pRect = { left: 0, right: 0, top: 0, bottom: 0 };
+    const nRect = { left: 0, right: 0, top: 0, bottom: 0 };
+
+    // Throttle Control Variables
+    let lastInputTime = 0;
+    const THROTTLE_MS = 150; // Prevents spam clicking the UI
+
+    // Input Listeners with State Guards
+    window.addEventListener('keydown', e => {
+        if(e.key === 'w' || e.key === 'ArrowUp') keys.w = true;
+        if(e.key === 'a' || e.key === 'ArrowLeft') keys.a = true;
+        if(e.key === 's' || e.key === 'ArrowDown') keys.s = true;
+        if(e.key === 'd' || e.key === 'ArrowRight') keys.d = true;
+        
+        if (gameState !== "TRADE") return; // Guard
+        if(e.key === 'Escape') closeTrade();
+    });
+
+    window.addEventListener('keyup', e => {
+        if(e.key === 'w' || e.key === 'ArrowUp') keys.w = false;
+        if(e.key === 'a' || e.key === 'ArrowLeft') keys.a = false;
+        if(e.key === 's' || e.key === 'ArrowDown') keys.s = false;
+        if(e.key === 'd' || e.key === 'ArrowRight') keys.d = false;
+    });
+
+    function rectIntersect(r1, r2) {
+        return !(r2.left > r1.right || r2.right < r1.left || 
+                 r2.top > r1.bottom || r2.bottom < r1.top);
+    }
+
+    function checkThrottle() {
+        let now = performance.now();
+        if (now - lastInputTime < THROTTLE_MS) return false;
+        lastInputTime = now;
+        return true;
+    }
+
+    function spawnFloatingText(x, y, text, color) {
+        const c = document.getElementById('float-container');
+        const el = document.createElement('div');
+        el.className = 'floating-text';
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        el.style.color = color;
+        el.innerText = text;
+        c.appendChild(el);
+        setTimeout(()=>el.remove(), 1500); // UI DOM elements cleanly disposed
+    }
+
+    function startLevel(lvl) {
+        currentLevel = lvl;
+        document.getElementById('menu-modal').style.display = 'none';
+        document.getElementById('hud').style.display = 'flex';
+        
+        gold = 1000; inventory = 0; timeLeft = 60; physicsAccumulator = 0; secondsTimer = 0;
+        pendingLimits = []; player.x = 400; player.y = 300;
+        
+        let cfg = LEVELS[currentLevel];
+        npcs = [];
+        for(let i=0; i<cfg.npcCount; i++) {
+            npcs.push({
+                x: Math.random()*(canvas.width-40)+20,
+                y: Math.random()*(canvas.height-40)+20,
+                size: 24,
+                basePrice: 100, // True value proxy
+                cooldown: 0,
+                dirX: (Math.random()-0.5)*cfg.npcSpeed,
+                dirY: (Math.random()-0.5)*cfg.npcSpeed
+            });
+        }
+        
+        gameState = "PLAY";
+        lastTime = performance.now();
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Engine Core Restructured for Timestep Stability (Deterministic Mechanics)
+    function gameLoop(timestamp) {
+        if(gameState === "END") return; // Absolute Guard
+
+        let rawDt = (timestamp - lastTime) / 1000;
+        lastTime = timestamp;
+
+        // Spiral of death prevention (Tab inactivity limit)
+        if (rawDt > 0.25) rawDt = 0.25;
+
+        physicsAccumulator += rawDt;
+
+        // Fixed Mathematics Loop Execution
+        while (physicsAccumulator >= FIXED_PHYSICS_STEP) {
+            
+            if (gameState === "PLAY") {
+                updateTick(FIXED_PHYSICS_STEP);
+            } else if (gameState === "TRADE" && currentLevel === 3) {
+                tradeWindowVolatilityTick(FIXED_PHYSICS_STEP); // Specifically tied to 60fps determinism
+            }
+
+            physicsAccumulator -= FIXED_PHYSICS_STEP;
+        }
+
+        render(); // The visual state can drop frames, but the numbers never will
+        requestAnimationFrame(gameLoop);
+    }
+
+    function updateTick(dt) {
+        secondsTimer += dt;
+        if(secondsTimer >= 1.0) {
+            timeLeft--;
+            secondsTimer = 0;
+            updateHUD();
+            
+            let cfg = LEVELS[currentLevel];
+            npcs.forEach(n => {
+                let rMove = (Math.random()-0.5) * cfg.vol * n.basePrice;
+                n.basePrice += rMove;
+                n.basePrice = Math.max(10, Math.min(200, n.basePrice));
+            });
+            
+            checkLimitOrders();
+
+            if (timeLeft <= 0) {
+                endGame();
+                return;
+            }
+        }
+
+        // Movement Map
+        player.vx = 0; player.vy = 0;
+        if(keys.w) player.vy = -player.speed;
+        if(keys.s) player.vy = player.speed;
+        if(keys.a) player.vx = -player.speed;
+        if(keys.d) player.vx = player.speed;
+
+        if(player.vx !== 0 && player.vy !== 0) {
+            let invMag = 1 / Math.sqrt(2);
+            player.vx *= invMag; player.vy *= invMag;
+        }
+
+        player.x += player.vx * dt;
+        player.y += player.vy * dt;
+
+        player.x = Math.max(0, Math.min(canvas.width - player.size, player.x));
+        player.y = Math.max(0, Math.min(canvas.height - player.size, player.y));
+
+        // GC Thrashing Prevention: Caching references instead of {} allocations natively
+        pRect.left = player.x; pRect.right = player.x + player.size;
+        pRect.top = player.y; pRect.bottom = player.y + player.size;
+
+        npcs.forEach(n => {
+            if(n.cooldown > 0) n.cooldown -= dt;
+            
+            n.x += n.dirX * dt;
+            n.y += n.dirY * dt;
+
+            if(n.x <= 0 || n.x+n.size >= canvas.width) n.dirX *= -1;
+            if(n.y <= 0 || n.y+n.size >= canvas.height) n.dirY *= -1;
+
+            if(n.cooldown <= 0) {
+                nRect.left = n.x; nRect.right = n.x + n.size;
+                nRect.top = n.y; nRect.bottom = n.y + n.size;
+                
+                if (rectIntersect(pRect, nRect)) {
+                    openTrade(n);
+                }
+            }
+        });
+
+        for(let i=spreadMonsters.length-1; i>=0; i--) {
+            let m = spreadMonsters[i];
+            m.y -= 50 * dt;
+            m.life -= dt;
+            if(m.life <= 0) spreadMonsters.splice(i, 1);
+        }
+    }
+
+    const LEVELS = {
+        1: { npcCount: 10, npcSpeed: 40, spread: 0.20, vol: 0.05, goalStr: "Buy cheap without feeding the Spread Monster." },
+        2: { npcCount: 3, npcSpeed: 10, spread: 0.02, vol: 0.02, goalStr: "Buy 5 shares before time runs out. (Hint: Limit takes too long)." },
+        3: { npcCount: 8, npcSpeed: 120, spread: 0.05, vol: 0.80, goalStr: "Survive the flash crash. Spamming Market Buy will destroy you." }
+    };
+
+    function calcAsk(basePrice) { return basePrice * (1 + LEVELS[currentLevel].spread / 2); }
+    function calcBid(basePrice) { return basePrice * (1 - LEVELS[currentLevel].spread / 2); }
+
+    function render() {
+        // Redraw only necessary logic footprint mapping (Black box optimization mapping)
+        ctx.fillStyle = '#2a2a35';
+        ctx.fillRect(0,0, canvas.width, canvas.height);
+
+        // Pre-cached placement geometry rendered locally over 60 times a sec 
+        ctx.fillStyle = 'rgba(74, 222, 128, 0.1)';
+        pendingLimits.forEach(lim => {
+            ctx.beginPath();
+            ctx.arc(lim.visX, lim.visY, 15, 0, Math.PI*2);
+            ctx.fill();
+        });
+
+        // Fixed string alloc variables (Reduce frame GC hits)
+        ctx.textAlign = "center";
+        
+        npcs.forEach(n => {
+            ctx.fillStyle = n.cooldown > 0 ? '#64748b' : '#f43f5e';
+            ctx.fillRect(n.x, n.y, n.size, n.size);
+
+            if (n.cooldown <= 0) {
+                ctx.fillStyle = '#ef4444'; ctx.font = "8px 'Press Start 2P'";
+                let ask = calcAsk(n.basePrice);
+                ctx.fillText("$" + ask.toFixed(0), n.x + n.size/2, n.y - 12);
+                
+                ctx.fillStyle = '#4ade80';
+                let bid = calcBid(n.basePrice);
+                ctx.fillText("$" + bid.toFixed(0), n.x + n.size/2, n.y - 2);
+            }
+        });
+
+        spreadMonsters.forEach(m => {
+            ctx.fillStyle = '#a855f7';
+            ctx.fillRect(m.x, m.y, 16, 16);
+            ctx.fillStyle = 'white'; ctx.font = "8px 'Press Start 2P'";
+            ctx.fillText("SPREAD!", m.x+8, m.y-4);
+        });
+
+        ctx.fillStyle = player.color;
+        ctx.fillRect(player.x, player.y, player.size, player.size);
+    }
+
+    function updateHUD() {
+        document.getElementById('hud-gold').innerText = gold.toFixed(0);
+        let estInv = inventory * 100;
+        document.getElementById('hud-inv').innerText = `${inventory} Shares (Est $${estInv})`;
+        document.getElementById('hud-time').innerText = timeLeft;
+    }
+
+    let tradeTimer = 0;
+    function openTrade(npc) {
+        if(gameState !== "PLAY") return; // State guard
+        gameState = "TRADE";
+        activeNPC = npc;
+        keys.w=false; keys.a=false; keys.s=false; keys.d=false;
+        updateTradeUI();
+        document.getElementById('trade-modal').style.display = 'flex';
+    }
+
+    function updateTradeUI() {
+        if(!activeNPC) return;
+        document.getElementById('tm-ask').innerText = "$" + calcAsk(activeNPC.basePrice).toFixed(2);
+        document.getElementById('tm-bid').innerText = "$" + calcBid(activeNPC.basePrice).toFixed(2);
+        
+        let sugLim = activeNPC.basePrice.toFixed(2);
+        if(currentLevel === 3) sugLim = 50; 
+        document.getElementById('inp-limit').value = sugLim;
+    }
+
+    function tradeWindowVolatilityTick(dt) {
+        tradeTimer += dt;
+        if (tradeTimer > 0.1) {
+            tradeTimer = 0;
+            let cfg = LEVELS[currentLevel];
+            let rMove = (Math.random()-0.5) * cfg.vol * activeNPC.basePrice * 5; 
+            activeNPC.basePrice += rMove;
+            activeNPC.basePrice = Math.max(10, Math.min(200, activeNPC.basePrice));
+            updateTradeUI();
+        }
+    }
+
+    function closeTrade() {
+        if (activeNPC) { activeNPC.cooldown = 3.0; }
+        activeNPC = null;
+        document.getElementById('trade-modal').style.display = 'none';
+        gameState = "PLAY";
+        updateHUD();
+    }
+
+    // Financially Destructive Button Logic: Throttle Defensive Guarding Applied
+    function executeMarketBuy() {
+        if (gameState !== "TRADE" || !activeNPC || !checkThrottle()) return;
+        
+        let p = calcAsk(activeNPC.basePrice);
+        if (gold >= p) {
+            gold -= p; inventory++;
+            let slippage = p - activeNPC.basePrice;
+            
+            spreadMonsters.push({x: activeNPC.x, y: activeNPC.y, life: 1.5});
+            spawnFloatingText(activeNPC.x * 1, activeNPC.y * 1 - 20, `-$${p.toFixed(0)}`, '#ef4444');
+            spawnFloatingText(activeNPC.x * 1 + 20, activeNPC.y * 1 - 40, `Monster Ate $${slippage.toFixed(0)}!`, '#a855f7');
+        } else {
+            spawnFloatingText(player.x, player.y - 20, "NO GOLD!", '#ef4444');
+        }
+        closeTrade();
+    }
+
+    function placeLimitOrder() {
+        if (gameState !== "TRADE" || !checkThrottle()) return;
+
+        let v = parseFloat(document.getElementById('inp-limit').value);
+        if (!v || v <= 0) return;
+        
+        if (gold >= v) {
+            gold -= v; 
+            // Geocache standard bounds offline so the visual CPU ignores math logic later
+            pendingLimits.push({ 
+                price: v, 
+                visX: player.x+player.size/2 + (Math.random()*4-2), 
+                visY: player.y+player.size/2 + (Math.random()*4-2) 
+            });
+            
+            spawnFloatingText(player.x, player.y - 10, `Limit Placed $${v.toFixed(0)}`, '#facc15');
+            timeLeft = Math.max(0, timeLeft - 3);
+        } else {
+            spawnFloatingText(player.x, player.y - 20, "NO GOLD!", '#ef4444');
+        }
+        closeTrade();
+    }
+
+    function checkLimitOrders() {
+        for(let i=pendingLimits.length-1; i>=0; i--) {
+            let limit = pendingLimits[i];
+            let filled = false;
+            
+            for(let j=0; j<npcs.length; j++) {
+                let ask = calcAsk(npcs[j].basePrice);
+                if (ask <= limit.price) {
+                    filled = true;
+                    inventory++;
+                    gold += (limit.price - ask);
+                    break;
+                }
+            }
+            if(filled) {
+                pendingLimits.splice(i, 1);
+                spawnFloatingText(player.x, player.y, `LIMIT FILLED!`, '#4ade80');
+            }
+        }
+    }
+
+    function endGame() {
+        gameState = "END";
+        
+        let invVal = 0;
+        npcs.forEach(n => invVal += n.basePrice);
+        let avgMarketPrice = invVal / npcs.length || 100;
+        
+        pendingLimits.forEach(l => gold += l.price);
+        
+        let finalNW = gold + (inventory * avgMarketPrice);
+        
+        document.getElementById('hud').style.display='none';
+        
+        const modal = document.getElementById('end-modal');
+        document.getElementById('end-nw').innerText = finalNW.toFixed(0);
+        
+        let desc = document.getElementById('end-desc');
+        
+        if (currentLevel === 1) {
+            if (finalNW < 1000) desc.innerHTML = "You lost money. The <strong>Spread Monster</strong> ate your profits alive because you kept using Market Buy across a wide spread.";
+            else desc.innerHTML = "Well done! You patiently used Limit Orders to sidestep the Spread Monster and bought below the average market value.";
+        } else if (currentLevel === 2) {
+            if (inventory < 5) desc.innerHTML = "Failed. You placed Limit Orders, but the desert was completely illiquid. When time is the constraint, you must cross the spread (Market Buy).";
+            else desc.innerHTML = "Success. You realized Time > Spread in illiquid environments and executed. A true trader.";
+        } else if (currentLevel === 3) {
+            if (finalNW < 1000) desc.innerHTML = "Crushed! You smashed Market Buy during a Flash Crash algorithm spike, buying locally at $150 only to watch it collapse back to $10. Never Market Buy in extreme volatility.";
+            else desc.innerHTML = "You survived the algorithms by placing a deep Limit Buy, catching the Flash Crash wick perfectly and securing the bag.";
+        }
+
+        modal.style.display = 'flex';
+    }
+
+</script>
+
+</body>
+</html>

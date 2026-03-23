@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KaChing: Compounding Tower Defense</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        
+        :root {
+            --bg: #1c1917;
+            --path: #78716c;
+            --grass: #166534;
+            --cash-color: #94a3b8;
+            --index-color: #10b981;
+            --text: #f8fafc;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'VT323', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        #game-wrapper {
+            position: relative;
+            background: var(--grass);
+            border: 4px solid #444;
+            border-radius: 8px;
+            width: 800px;
+            height: 600px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* HUD */
+        #hud {
+            position: absolute; top: 0; left: 0; right: 0;
+            background: rgba(0,0,0,0.85); padding: 10px 20px;
+            display: flex; justify-content: space-between;
+            font-size: 20px; z-index: 10;
+        }
+
+        .stat { color: #fed7aa; }
+        .stat span { color: white; }
+
+        /* Controls */
+        #controls {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: rgba(0,0,0,0.85); padding: 10px;
+            display: flex; justify-content: center; gap: 20px; z-index: 10;
+        }
+
+        .btn-tower {
+            background: #292524; color: white; border: 2px solid #57534e;
+            padding: 10px 20px; font-family: 'VT323', monospace; font-size: 18px;
+            cursor: pointer; transition: 0.1s; display: flex; flex-direction: column; align-items: center;
+        }
+        .btn-tower:hover { border-color: white; }
+        
+        .btn-tower.active { border-color: #fbbf24; background: #451a03; }
+        .btn-sell { background: #7f1d1d; border-color: #ef4444; }
+        .btn-sell.active { border-color: white; }
+        
+        .cost { font-size: 14px; color: #fbbf24; }
+
+        /* Modals */
+        .modal {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 20; text-align: center;
+        }
+
+        .window {
+            background: #292524; border: 4px solid var(--index-color);
+            padding: 30px; border-radius: 8px; max-width: 500px;
+        }
+
+        h2 { margin-top: 0; font-size: 32px; color: var(--index-color); margin-bottom: 10px; }
+        p { font-size: 18px; color: #d6d3d1; line-height: 1.4; }
+
+        .btn-menu {
+            background: #0f172a; color: var(--index-color); border: 2px solid var(--index-color);
+            padding: 10px 20px; font-size: 24px; font-family: 'VT323'; margin: 10px; cursor: pointer;
+        }
+        .btn-menu:hover { background: var(--index-color); color: black; }
+
+        /* Clickables */
+        .drop {
+            position: absolute; width: 16px; height: 16px; background: #fbbf24;
+            border-radius: 50%; border: 2px solid white; cursor: pointer;
+            animation: bounce 1s infinite alternate; z-index: 5;
+        }
+
+        @keyframes bounce { from{transform:translateY(0);} to{transform:translateY(-10px);} }
+
+    </style>
+</head>
+<body>
+
+    <h1 style="font-size:32px; color:#10b981; margin-bottom:5px;">KaChing: Long-Term Defense</h1>
+    <p style="font-size:18px; color:#94a3b8; margin-top:0;">Build towers to defend your Retirement Base.</p>
+
+    <div id="game-wrapper">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+        <div id="hud" style="display:none;">
+            <div class="stat">INCOME: $<span id="hud-gold">500</span></div>
+            <div class="stat">WAVE (YEAR): <span id="hud-wave">1</span>/40</div>
+            <div class="stat" style="color:#ef4444;">BASE HP: <span id="hud-hp">100</span></div>
+        </div>
+
+        <div id="controls" style="display:none;">
+            <button class="btn-tower" id="btn-cash" onclick="selectTool('cash')">
+                <span style="color:var(--cash-color)">Cash Tower</span>
+                <span class="cost">$100 (Flat Dmg)</span>
+            </button>
+            <button class="btn-tower" id="btn-index" onclick="selectTool('index')">
+                <span style="color:var(--index-color)">Index Tower</span>
+                <span class="cost">$250 (+8% Dmg/Yr)</span>
+            </button>
+            <button class="btn-tower btn-sell" id="btn-sell" onclick="selectTool('sell')">
+                <span>PANIC SELL</span>
+                <span class="cost">Recover 50%</span>
+            </button>
+            <button class="btn-tower" style="background:#1e40af; border-color:#3b82f6;" onclick="startWave()">
+                <span>NEXT YEAR ➔</span>
+            </button>
+        </div>
+
+        <!-- Dividend Drops Container -->
+        <div id="drops-container"></div>
+
+        <!-- Level Select -->
+        <div id="menu-modal" class="modal">
+            <div class="window" style="max-width: 600px;">
+                <h2>Select Scenario</h2>
+                
+                <div style="text-align:left; margin-bottom:20px;">
+                    <button class="btn-menu" style="width:100%; text-align:left;" onclick="startLevel(1)">
+                        1. The Inflation Swarm<br>
+                        <span style="font-size:14px;color:#94a3b8;">Creep HP scales exponentially. Cash towers flatten out. Build Index!</span>
+                    </button>
+                    <button class="btn-menu" style="width:100%; text-align:left;" onclick="startLevel(2)">
+                        2. The Bear Market Boss<br>
+                        <span style="font-size:14px;color:#94a3b8;">Boss aura drops Index dmg by 50%. Do NOT panic sell your towers!</span>
+                    </button>
+                    <button class="btn-menu" style="width:100%; text-align:left;" onclick="startLevel(3)">
+                        3. The Lost Decade<br>
+                        <span style="font-size:14px;color:#94a3b8;">Index passive growth stops. Manually click Dividend Drops to level up!</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-modal" class="modal" style="display:none;">
+            <div class="window">
+                <h2 id="end-title">Simulation Ended</h2>
+                <p id="end-desc"></p>
+                <button class="btn-menu" onclick="location.reload()">Return</button>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // State Guards
+    let gameState = "MENU"; // MENU, BUILD, WAVE, END
+    let currentLevel = 1;
+
+    let gold = 500;
+    let wave = 1;
+    let baseHp = 100;
+    
+    // Engine & Optics Math
+    let activeTool = null; // 'cash', 'index', 'sell'
+    let lastTime = 0;
+    let physicsAccumulator = 0;
+    const FIXED_PHYSICS_STEP = 1/60;
+    let lastInputTime = 0;
+    const THROTTLE_MS = 150;
+
+    // Grid Path Pre-compiled
+    const WAYPOINTS = [
+        {x: 0, y: 100}, {x: 650, y: 100}, 
+        {x: 650, y: 300}, {x: 150, y: 300}, 
+        {x: 150, y: 500}, {x: 800, y: 500}
+    ];
+
+    let enemies = [];
+    let towers = [];
+    let bullets = [];
+    
+    // Wave Spawner
+    let waveConfig = {
+        enemiesLeft: 0,
+        spawnTimer: 0,
+        spawnInterval: 1.0,
+        inflationRate: 0.10 // enemy HP grows 10% per wave
+    };
+
+    let macroDebuff = false; // Bear Market aura
+    let lostDecadeActive = false;
+    let mouseX = 0, mouseY = 0;
+
+    function checkThrottle() {
+        let now = performance.now();
+        if (now - lastInputTime < THROTTLE_MS) return false;
+        lastInputTime = now;
+        return true;
+    }
+
+    // Input Events carefully locked behind State Guards and Throttles
+    canvas.addEventListener('mousedown', (e) => {
+        if (gameState !== "BUILD" && gameState !== "WAVE") return;
+        if (!checkThrottle()) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        if (activeTool === 'sell') {
+            for(let i=0; i<towers.length; i++) {
+                let t = towers[i];
+                let dist = Math.hypot(t.x - x, t.y - y);
+                if (dist < 20) {
+                    gold += t.cost * 0.5; // 50% penalty
+                    towers.splice(i, 1);
+                    updateHUD();
+                    return;
+                }
+            }
+        } else if (activeTool === 'cash' || activeTool === 'index') {
+            if (isValidPlacement(x, y)) {
+                let cost = activeTool === 'cash' ? 100 : 250;
+                if (gold >= cost) {
+                    gold -= cost;
+                    towers.push({
+                        type: activeTool,
+                        x: x, y: y,
+                        range: 120,
+                        fireRate: 1.0, 
+                        cooldown: 0,
+                        baseDmg: activeTool === 'cash' ? 15 : 10,
+                        buffLevel: 1,
+                        cost: cost
+                    });
+                    updateHUD();
+                }
+            }
+        }
+    });
+
+    canvas.addEventListener('mousemove', e => {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.clientX - rect.left; mouseY = e.clientY - rect.top;
+    });
+
+    function selectTool(tool) {
+        if (!checkThrottle()) return;
+        activeTool = tool;
+        document.getElementById('btn-cash').className = tool === 'cash' ? 'btn-tower active' : 'btn-tower';
+        document.getElementById('btn-index').className = tool === 'index' ? 'btn-tower active' : 'btn-tower';
+        document.getElementById('btn-sell').className = tool === 'sell' ? 'btn-tower btn-sell active' : 'btn-tower btn-sell';
+    }
+
+    function isValidPlacement(x, y) {
+        // Quick visual bounds checking avoiding arrays
+        for (let i=0; i<WAYPOINTS.length-1; i++) {
+            let p1 = WAYPOINTS[i]; let p2 = WAYPOINTS[i+1];
+            let l2 = Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2);
+            let t = Math.max(0, Math.min(1, ((x - p1.x)*(p2.x - p1.x) + (y - p1.y)*(p2.y - p1.y)) / l2));
+            let projX = p1.x + t * (p2.x - p1.x);
+            let projY = p1.y + t * (p2.y - p1.y);
+            let dist = Math.hypot(x - projX, y - projY);
+            if (dist < 40) return false; 
+        }
+        for (let t of towers) {
+            if (Math.hypot(t.x - x, t.y - y) < 40) return false;
+        }
+        return true;
+    }
+
+    function startLevel(lvl) {
+        currentLevel = lvl;
+        document.getElementById('menu-modal').style.display = 'none';
+        document.getElementById('hud').style.display = 'flex';
+        document.getElementById('controls').style.display = 'flex';
+        
+        gold = 500; wave = 1; baseHp = 100;
+        towers = []; enemies = []; bullets = [];
+        physicsAccumulator = 0;
+        
+        gameState = "BUILD";
+        updateHUD();
+        lastTime = performance.now();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function startWave() {
+        if (gameState !== "BUILD" || !checkThrottle()) return;
+        
+        gameState = "WAVE";
+        waveConfig.enemiesLeft = 10 + Math.floor(wave * 1.5);
+        waveConfig.spawnTimer = 0;
+        
+        macroDebuff = false;
+        if (currentLevel === 2 && wave % 5 === 0) {
+            macroDebuff = true; 
+            waveConfig.enemiesLeft = 1; 
+        }
+
+        lostDecadeActive = false;
+        if (currentLevel === 3 && wave >= 5 && wave <= 15) {
+            lostDecadeActive = true; 
+        }
+
+        updateHUD();
+    }
+
+    function endWave() {
+        wave++;
+        gameState = "BUILD";
+        gold += 200 + (wave * 10); 
+        
+        if (!lostDecadeActive) {
+            towers.forEach(t => {
+                if (t.type === 'index') t.buffLevel += 1; 
+            });
+        }
+        
+        if (wave > 40) {
+            endGame(true);
+        }
+        updateHUD();
+    }
+
+    // Engine: Fixed Timestep Integrator loop prevents frame dropping breaking damage tracking
+    function gameLoop(timestamp) {
+        if(gameState === "END") return;
+        
+        let rawDt = (timestamp - lastTime) / 1000;
+        lastTime = timestamp;
+
+        if (rawDt > 0.25) rawDt = 0.25; // Prevents "spiral of death" tab pausing
+        physicsAccumulator += rawDt;
+
+        while (physicsAccumulator >= FIXED_PHYSICS_STEP) {
+            if (gameState === "WAVE") {
+                updateWave(FIXED_PHYSICS_STEP);
+            }
+            updateTowers(FIXED_PHYSICS_STEP);
+            updateBullets(FIXED_PHYSICS_STEP);
+            physicsAccumulator -= FIXED_PHYSICS_STEP;
+        }
+
+        render();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function updateWave(dt) {
+        if (waveConfig.enemiesLeft > 0) {
+            waveConfig.spawnTimer -= dt;
+            if (waveConfig.spawnTimer <= 0) {
+                spawnEnemy();
+                waveConfig.enemiesLeft--;
+                waveConfig.spawnTimer = macroDebuff ? 999 : 0.8 - Math.min(0.5, wave*0.01);
+            }
+        } else if (enemies.length === 0) {
+            endWave();
+        }
+
+        for (let i = enemies.length-1; i >= 0; i--) {
+            let e = enemies[i];
+            let target = WAYPOINTS[e.pathIndex];
+            
+            let dx = target.x - e.x;
+            let dy = target.y - e.y;
+            let dist = Math.hypot(dx, dy);
+            
+            if (dist < 5) {
+                e.pathIndex++;
+                if (e.pathIndex >= WAYPOINTS.length) {
+                    baseHp -= e.isBoss ? 50 : 5;
+                    enemies.splice(i, 1);
+                    updateHUD();
+                    if (baseHp <= 0) endGame(false);
+                    continue;
+                }
+            } else {
+                let speed = e.isBoss ? 30 : 50;
+                e.x += (dx / dist) * speed * dt;
+                e.y += (dy / dist) * speed * dt;
+            }
+        }
+    }
+
+    function spawnEnemy() {
+        let baseEnemyHP = 20 * Math.pow(1 + waveConfig.inflationRate, wave - 1); 
+        
+        let e = {
+            x: WAYPOINTS[0].x, y: WAYPOINTS[0].y,
+            pathIndex: 1,
+            hp: macroDebuff ? baseEnemyHP * 20 : baseEnemyHP,
+            maxHp: macroDebuff ? baseEnemyHP * 20 : baseEnemyHP,
+            isBoss: macroDebuff
+        };
+        enemies.push(e);
+    }
+
+    function updateTowers(dt) {
+        towers.forEach(t => {
+            if (t.cooldown > 0) t.cooldown -= dt;
+            
+            if (t.cooldown <= 0 && enemies.length > 0) {
+                let target = null;
+                for (let e of enemies) {
+                    if (Math.hypot(e.x - t.x, e.y - t.y) <= t.range) { target = e; break; }
+                }
+
+                if (target) {
+                    let dmg = t.baseDmg;
+                    if (t.type === 'index') {
+                        dmg = t.baseDmg * Math.pow(1.08, t.buffLevel - 1);
+                        if (macroDebuff) dmg *= 0.5; 
+                    }
+
+                    bullets.push({
+                        x: t.x, y: t.y, tx: target.x, ty: target.y,
+                        dmg: dmg, targetId: target, speed: 400, color: t.type === 'index' ? '#10b981' : '#94a3b8'
+                    });
+                    t.cooldown = t.fireRate;
+                }
+            }
+        });
+    }
+
+    function updateBullets(dt) {
+        for(let i=bullets.length-1; i>=0; i--) {
+            let b = bullets[i];
+            
+            let target = enemies.find(e => e === b.targetId);
+            if (!target) { bullets.splice(i, 1); continue; }
+            
+            b.tx = target.x; b.ty = target.y;
+            let dx = b.tx - b.x; let dy = b.ty - b.y;
+            let dist = Math.hypot(dx, dy);
+
+            if (dist < 10) {
+                target.hp -= b.dmg;
+                if (target.hp <= 0 && enemies.includes(target)) {
+                    gold += target.isBoss ? 100 : 10;
+                    
+                    if (currentLevel === 3 && Math.random() < 0.3 && !target.isBoss) {
+                        spawnDrop(target.x, target.y);
+                    }
+
+                    let idx = enemies.indexOf(target);
+                    if(idx > -1) enemies.splice(idx, 1);
+                    updateHUD();
+                }
+                bullets.splice(i, 1);
+            } else {
+                b.x += (dx / dist) * b.speed * dt;
+                b.y += (dy / dist) * b.speed * dt;
+            }
+        }
+    }
+
+    function spawnDrop(x, y) {
+        const cont = document.getElementById('drops-container');
+        const d = document.createElement('div');
+        d.className = 'drop';
+        d.style.left = (x + rectOffsetX()) + 'px'; 
+        d.style.top = (y + rectOffsetY()) + 'px';
+        
+        d.onclick = () => {
+            if (!checkThrottle()) return;
+            towers.forEach(t => { if(t.type === 'index') t.buffLevel += 0.2; });
+            d.remove();
+        };
+
+        cont.appendChild(d);
+        setTimeout(() => { if(d.parentElement) d.remove(); }, 4000); // GC Cleaned naturally
+    }
+
+    function rectOffsetX() { return canvas.getBoundingClientRect().left; }
+    function rectOffsetY() { return canvas.getBoundingClientRect().top; }
+
+    function updateHUD() {
+        document.getElementById('hud-gold').innerText = gold;
+        document.getElementById('hud-wave').innerText = wave;
+        document.getElementById('hud-hp').innerText = baseHp;
+    }
+
+    function render() {
+        ctx.clearRect(0,0, canvas.width, canvas.height);
+
+        // Path
+        ctx.strokeStyle = 'var(--path)'; ctx.lineWidth = 40;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        WAYPOINTS.forEach((wp, i) => { i===0 ? ctx.moveTo(wp.x, wp.y) : ctx.lineTo(wp.x, wp.y); });
+        ctx.stroke();
+
+        if (macroDebuff) {
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.1)';
+            ctx.fillRect(0,0, canvas.width, canvas.height);
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.8)';
+            ctx.font = "24px VT323";
+            ctx.fillText("BEAR MARKET AURA (-50% Index Dmg)", 20, 50);
+        }
+
+        if (activeTool && gameState === "BUILD") {
+            ctx.fillStyle = isValidPlacement(mouseX, mouseY) ? 'rgba(255,255,255,0.3)' : 'rgba(239,68,68,0.3)';
+            ctx.beginPath(); ctx.arc(mouseX, mouseY, 20, 0, Math.PI*2); ctx.fill();
+        }
+
+        towers.forEach(t => {
+            ctx.fillStyle = t.type === 'index' ? 'var(--index-color)' : 'var(--cash-color)';
+            ctx.beginPath(); ctx.arc(t.x, t.y, 16, 0, Math.PI*2); ctx.fill();
+            ctx.strokeStyle = 'black'; ctx.lineWidth = 2; ctx.stroke();
+            
+            if (t.type === 'index') {
+                ctx.fillStyle = '#fff'; ctx.font = "12px monospace"; ctx.textAlign="center";
+                ctx.fillText(`Lv${Math.floor(t.buffLevel)}`, t.x, t.y+4);
+            }
+        });
+
+        enemies.forEach(e => {
+            ctx.fillStyle = e.isBoss ? '#b91c1c' : '#dc2626';
+            let s = e.isBoss ? 30 : 12;
+            ctx.beginPath(); ctx.arc(e.x, e.y, s, 0, Math.PI*2); ctx.fill();
+            
+            let p = e.hp / e.maxHp;
+            ctx.fillStyle = 'black'; ctx.fillRect(e.x - s, e.y - s - 8, s*2, 4);
+            ctx.fillStyle = '#4ade80'; ctx.fillRect(e.x - s, e.y - s - 8, s*2 * p, 4);
+        });
+
+        bullets.forEach(b => {
+            ctx.fillStyle = b.color;
+            ctx.beginPath(); ctx.arc(b.x, b.y, 4, 0, Math.PI*2); ctx.fill();
+        });
+    }
+
+    function endGame(win) {
+        gameState = "END";
+        document.getElementById('hud').style.display='none';
+        document.getElementById('controls').style.display='none';
+        
+        let m = document.getElementById('end-modal');
+        let t = document.getElementById('end-title');
+        let d = document.getElementById('end-desc');
+
+        if (win) {
+            t.innerText = "Base Defended!";
+            t.style.color = "var(--index-color)";
+            if(currentLevel===1) d.innerText = "The exponential geometry of the Index Towers overtook the exponential scaling of Inflation.";
+            if(currentLevel===2) d.innerText = "You survived the catastrophic drawdowns because you trusted the math and didn't panic sell.";
+            if(currentLevel===3) d.innerText = "You actively reinvested your dividends through the lost decade, maintaining the compound curve.";
+        } else {
+            t.innerText = "Retirement Destroyed";
+            t.style.color = "#ef4444";
+            if(currentLevel===1) d.innerText = "Inflation creeps scaled exponentially over 40 years. Your flat-damage Cash towers were mathematically guaranteed to fail. You lost purchasing power.";
+            if(currentLevel===2) d.innerText = "The Bear Market broke you. (Or you panic sold half your damage out of fear).";
+            if(currentLevel===3) d.innerText = "Without capital appreciation, failing to reinvest dividends mathematically doomed your defenses.";
+        }
+        m.style.display = 'flex';
+    }
+
+</script>
+
+</body>
+</html>
