@@ -3,32 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fin-dle | Financial Wordle</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <title>FinQuest | Financial Wordle</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0f172a;
-            --primary: #6366f1;
-            --primary-hover: #4f46e5;
-            --correct: #10b981;
-            --present: #f59e0b;
-            --absent: #475569;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --bg-deep:      #08080f;
+            --bg-panel:     #0d0f1a;
+            --bg-card:      #111827;
+            --neon-cyan:    #00d4ff;
+            --neon-violet:  #bf00ff;
+            --primary:      #00d4ff;
+            --primary-hover:#00b8e0;
+            --correct:      #00ff87;
+            --present:      #ffaa00;
+            --absent:       #1e2535;
+            --text-main:    #e8f0fe;
+            --text-muted:   #6b7fa3;
+            --glass-bg:     rgba(0, 212, 255, 0.04);
+            --glass-border: rgba(0, 212, 255, 0.15);
+            --font-game:    'Orbitron', monospace;
+            --font-body:    'Rajdhani', sans-serif;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Outfit', sans-serif;
-            user-select: none;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-body); user-select: none; }
 
         body {
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            background-color: var(--bg-deep);
+            background-image:
+                linear-gradient(rgba(0, 212, 255, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.025) 1px, transparent 1px);
+            background-size: 40px 40px;
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
@@ -38,66 +42,121 @@
             padding-bottom: 2rem;
         }
 
+        /* Scanlines overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 3px,
+                rgba(0, 0, 0, 0.05) 3px,
+                rgba(0, 0, 0, 0.05) 4px
+            );
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* ── HEADER ── */
         header {
             width: 100%;
-            max-width: 500px;
+            max-width: 520px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem 1.5rem;
+            padding: 1.1rem 1.5rem;
             border-bottom: 1px solid var(--glass-border);
-            margin-bottom: 1rem;
+            margin-bottom: 1.2rem;
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -1px; left: 20%; right: 20%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+            opacity: 0.5;
         }
 
         .title {
-            font-size: 1.8rem;
-            font-weight: 800;
-            background: linear-gradient(to right, #6366f1, #a855f7);
+            font-family: var(--font-game);
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: linear-gradient(100deg, var(--neon-cyan), var(--neon-violet));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: 1px;
+            background-clip: text;
+            filter: drop-shadow(0 0 14px rgba(0, 212, 255, 0.5));
         }
 
         .header-actions button {
-            background: var(--glass-bg);
+            background: var(--bg-panel);
             border: 1px solid var(--glass-border);
-            color: var(--text-main);
-            padding: 0.5rem 1rem;
-            border-radius: 9999px;
+            color: var(--text-muted);
+            padding: 0.45rem 0.9rem;
+            border-radius: 3px;
             cursor: pointer;
-            font-weight: 600;
+            font-family: var(--font-game);
+            font-size: 0.5rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
             transition: all 0.2s ease;
-            backdrop-filter: blur(10px);
         }
 
         .header-actions button:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-1px);
+            background: rgba(0, 212, 255, 0.08);
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+            box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
         }
 
         .level-indicator {
-            font-size: 0.9rem;
+            font-family: var(--font-game);
+            font-size: 0.48rem;
+            letter-spacing: 2px;
             color: var(--text-muted);
-            margin-top: 0.2rem;
-            text-align: left;
+            margin-top: 4px;
+            text-transform: uppercase;
         }
 
+        /* ── HINT BOX ── */
         .hint-container {
-            margin: 0.5rem 0 1rem 0;
-            padding: 0.8rem 1.5rem;
-            background: rgba(99, 102, 241, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            border-radius: 12px;
-            text-align: center;
+            margin: 0 0 1.2rem 0;
+            padding: 0.75rem 1.4rem;
+            background: rgba(0, 212, 255, 0.04);
+            border: 1px solid var(--glass-border);
+            border-left: 3px solid var(--neon-cyan);
+            border-radius: 4px;
+            text-align: left;
             max-width: 90%;
-            font-size: 0.95rem;
-            color: #cbd5e1;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+            box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.03);
+            position: relative;
         }
 
+        .hint-container::before {
+            content: 'HINT';
+            font-family: var(--font-game);
+            font-size: 0.45rem;
+            letter-spacing: 2px;
+            color: var(--neon-cyan);
+            display: block;
+            margin-bottom: 4px;
+            opacity: 0.8;
+        }
+
+        /* ── GAME BOARD ── */
         #game-board {
             display: grid;
-            gap: 8px;
+            gap: 7px;
             margin-bottom: 2rem;
             padding: 10px;
             justify-content: center;
@@ -106,89 +165,135 @@
         .tile {
             width: 60px;
             height: 60px;
-            border: 2px solid var(--glass-border);
-            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 2rem;
-            font-weight: 800;
+            font-family: var(--font-game);
+            font-size: 1.6rem;
+            font-weight: 900;
             text-transform: uppercase;
             transition: all 0.3s ease;
-            background: var(--glass-bg);
-            backdrop-filter: blur(4px);
+            background: var(--bg-card);
+            box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.4);
+            color: var(--text-main);
         }
 
         .tile.filled {
-            border-color: var(--text-muted);
+            border-color: rgba(0, 212, 255, 0.3);
+            box-shadow: 0 0 8px rgba(0, 212, 255, 0.15), inset 0 0 12px rgba(0, 0, 0, 0.4);
             animation: popIn 0.1s ease;
         }
 
         @keyframes popIn {
-            0% { transform: scale(0.8); opacity: 0; }
-            40% { transform: scale(1.1); }
+            0%   { transform: scale(0.8); opacity: 0; }
+            40%  { transform: scale(1.1); }
             100% { transform: scale(1); opacity: 1; }
         }
 
         @keyframes flipIn {
-            0% { transform: rotateX(-90deg); }
+            0%   { transform: rotateX(-90deg); }
             100% { transform: rotateX(0deg); }
         }
 
-        .tile.correct { background: var(--correct); border-color: var(--correct); color: white; animation: flipIn 0.5s ease forwards; }
-        .tile.present { background: var(--present); border-color: var(--present); color: white; animation: flipIn 0.5s ease forwards; }
-        .tile.absent { background: var(--absent); border-color: var(--absent); color: white; animation: flipIn 0.5s ease forwards; }
+        .tile.correct {
+            background: var(--correct);
+            border-color: var(--correct);
+            color: #08080f;
+            box-shadow: 0 0 20px rgba(0, 255, 135, 0.6), 0 0 40px rgba(0, 255, 135, 0.2);
+            animation: flipIn 0.5s ease forwards;
+        }
 
+        .tile.present {
+            background: var(--present);
+            border-color: var(--present);
+            color: #08080f;
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.6), 0 0 40px rgba(255, 170, 0, 0.2);
+            animation: flipIn 0.5s ease forwards;
+        }
+
+        .tile.absent {
+            background: var(--absent);
+            border-color: rgba(255, 255, 255, 0.04);
+            color: var(--text-muted);
+            animation: flipIn 0.5s ease forwards;
+        }
+
+        /* ── KEYBOARD ── */
         .keyboard {
             width: 100%;
-            max-width: 500px;
+            max-width: 520px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 7px;
             padding: 0 10px;
         }
 
         .keyboard-row {
             display: flex;
             justify-content: center;
-            gap: 6px;
+            gap: 5px;
         }
 
         .key {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
+            background: var(--bg-panel);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             color: var(--text-main);
-            font-weight: 600;
-            border-radius: 8px;
+            font-family: var(--font-game);
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            border-radius: 3px;
             height: 50px;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
             flex: 1;
             min-width: 25px;
-            max-width: 45px;
+            max-width: 44px;
             text-transform: uppercase;
         }
 
-        .key.large {
-            flex: 1.5;
-            max-width: 65px;
-            font-size: 0.8rem;
+        .key:hover {
+            background: rgba(0, 212, 255, 0.08);
+            border-color: rgba(0, 212, 255, 0.3);
+            color: var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.15);
         }
 
-        .key:active { transform: scale(0.95); }
-        .key.correct { background: var(--correct); border-color: var(--correct); }
-        .key.present { background: var(--present); border-color: var(--present); }
-        .key.absent { background: var(--absent); border-color: var(--absent); opacity: 0.5; }
+        .key.large { flex: 1.5; max-width: 64px; font-size: 0.55rem; }
 
-        /* Modals */
+        .key:active { transform: scale(0.93); }
+
+        .key.correct {
+            background: var(--correct);
+            border-color: var(--correct);
+            color: #08080f;
+            box-shadow: 0 0 12px rgba(0, 255, 135, 0.5);
+        }
+
+        .key.present {
+            background: var(--present);
+            border-color: var(--present);
+            color: #08080f;
+            box-shadow: 0 0 12px rgba(255, 170, 0, 0.5);
+        }
+
+        .key.absent {
+            background: rgba(15, 20, 30, 0.8);
+            border-color: rgba(255, 255, 255, 0.03);
+            color: rgba(107, 127, 163, 0.4);
+        }
+
+        /* ── MODALS ── */
         .modal-backdrop {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -198,91 +303,121 @@
             transition: opacity 0.3s ease;
         }
 
-        .modal-backdrop.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        .modal-backdrop.active { opacity: 1; pointer-events: auto; }
 
         .modal {
-            background: rgba(30, 41, 59, 0.95);
+            background: var(--bg-panel);
             border: 1px solid var(--glass-border);
-            border-radius: 20px;
+            border-radius: 8px;
             padding: 2rem;
             width: 90%;
             max-width: 400px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 60px rgba(0, 212, 255, 0.1), 0 25px 50px rgba(0, 0, 0, 0.8);
             transform: scale(0.9);
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             text-align: center;
+            position: relative;
+            overflow: hidden;
         }
 
-        .modal-backdrop.active .modal {
-            transform: scale(1);
+        /* Modal top glow */
+        .modal::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 10%; right: 10%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+            opacity: 0.6;
         }
+
+        .modal-backdrop.active .modal { transform: scale(1); }
 
         .modal h2 {
+            font-family: var(--font-game);
+            font-size: 1rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
             margin-bottom: 1rem;
-            color: white;
-            font-size: 1.5rem;
+            color: var(--text-main);
         }
 
         .modal p {
             color: var(--text-muted);
             margin-bottom: 1.5rem;
-            line-height: 1.5;
-            font-size: 1.05rem;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            font-weight: 500;
         }
 
         .modal .concept-word {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--primary);
+            font-family: var(--font-game);
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: var(--neon-cyan);
             margin: 0.5rem 0;
-            letter-spacing: 2px;
+            letter-spacing: 6px;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.7);
+            filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.5));
         }
 
         .btn {
-            background: var(--primary);
-            color: white;
-            border: none;
+            background: transparent;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
             padding: 0.8rem 1.5rem;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
+            border-radius: 4px;
+            font-family: var(--font-game);
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
             cursor: pointer;
             width: 100%;
-            transition: background 0.2s ease, transform 0.1s ease;
+            transition: all 0.2s ease;
+            box-shadow: 0 0 16px rgba(0, 212, 255, 0.15), inset 0 0 16px rgba(0, 212, 255, 0.04);
         }
 
-        .btn:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        .btn:hover {
+            background: rgba(0, 212, 255, 0.12);
+            box-shadow: 0 0 24px rgba(0, 212, 255, 0.35), inset 0 0 24px rgba(0, 212, 255, 0.08);
+            transform: translateY(-2px);
+        }
+
         .btn:active { transform: translateY(0); }
-        
+
+        /* ── SHAKE ANIMATION ── */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
             20%, 40%, 60%, 80% { transform: translateX(5px); }
         }
+
         .shake { animation: shake 0.5s; }
 
+        /* ── TOAST ── */
         .toast {
             position: fixed;
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: white;
-            color: #0f172a;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
+            background: var(--bg-panel);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 10px 24px;
+            border-radius: 4px;
+            font-family: var(--font-game);
+            font-weight: 700;
+            font-size: 0.6rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
             opacity: 0;
             transition: opacity 0.3s;
             pointer-events: none;
             z-index: 200;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            font-size: 0.95rem;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
         }
-        .toast.show { opacity: 1; }
 
+        .toast.show { opacity: 1; }
     </style>
 </head>
 <body>
@@ -293,12 +428,13 @@
             <div class="level-indicator" id="level-display">Level 1 of 5</div>
         </div>
         <div class="header-actions">
+            <button onclick="window.location.href='index.html'" style="margin-right: 8px;">Menu</button>
             <button onclick="showHowToPlay()">How to Play</button>
         </div>
     </header>
 
     <div class="hint-container" id="hint-display">
-        Hint: Loading...
+        Loading...
     </div>
 
     <div id="game-board"></div>
@@ -328,7 +464,7 @@
     <div class="modal-backdrop" id="how-to-modal">
         <div class="modal">
             <h2>How to Play Fin-dle</h2>
-            <p style="text-align: left; font-size: 0.95rem;">
+            <p style="text-align: left; font-size: 0.9rem;">
                 Guess the financial word in 6 tries.<br><br>
                 Hit the enter button to submit your guess.<br><br>
                 After each guess, the color of the tiles will change to show how close your guess was to the word.<br><br>
@@ -386,9 +522,7 @@
         }
 
         function saveState() {
-            localStorage.setItem('findle_state', JSON.stringify({
-                currentLevelIndex
-            }));
+            localStorage.setItem('findle_state', JSON.stringify({ currentLevelIndex }));
         }
 
         function initGame() {
@@ -405,7 +539,7 @@
             const wordLength = levelData.word.length;
 
             document.getElementById('level-display').innerText = `Level ${currentLevelIndex + 1} of ${LEVELS.length}`;
-            document.getElementById('hint-display').innerText = `Hint: ${levelData.hint}`;
+            document.getElementById('hint-display').innerText = levelData.hint;
 
             const board = document.getElementById('game-board');
             board.innerHTML = '';
@@ -426,9 +560,7 @@
         }
 
         document.querySelectorAll('.key').forEach(key => {
-            key.addEventListener('click', () => {
-                handleInput(key.getAttribute('data-key'));
-            });
+            key.addEventListener('click', () => { handleInput(key.getAttribute('data-key')); });
         });
 
         document.addEventListener('keydown', (e) => {
@@ -441,7 +573,6 @@
 
         function handleInput(key) {
             if (isGameOver) return;
-            
             const wordLength = LEVELS[currentLevelIndex].word.length;
 
             if (key === 'Enter' || key === 'enter') {
@@ -488,21 +619,21 @@
             const wordLength = LEVELS[currentLevelIndex].word.length;
             for (let i = 0; i < wordLength; i++) {
                 const tile = document.getElementById(`tile-${currentRow}-${i}`);
-                tile.classList.remove('shake');
-                void tile.offsetWidth;
-                tile.classList.add('shake');
+                if(tile) {
+                    tile.classList.remove('shake');
+                    void tile.offsetWidth;
+                    tile.classList.add('shake');
+                }
             }
         }
 
         function submitGuess() {
             const targetWord = LEVELS[currentLevelIndex].word;
-            
             if (currentGuess.length !== targetWord.length) {
                 showToast("Not enough letters");
                 animateRowShake();
                 return;
             }
-            
             evaluateGuess();
         }
 
@@ -533,13 +664,14 @@
             currentGuess.split('').forEach((letter, i) => {
                 setTimeout(() => {
                     const tile = document.getElementById(`tile-${currentRow}-${i}`);
-                    tile.classList.add(statusArr[i]);
-                    updateKeyboardRowColor(letter, statusArr[i]);
+                    if(tile) {
+                        tile.classList.add(statusArr[i]);
+                        updateKeyboardRowColor(letter, statusArr[i]);
+                    }
                 }, i * delay);
             });
 
             guesses.push(currentGuess);
-            
             const isWin = currentGuess === targetWord;
             currentGuess = "";
 
@@ -570,7 +702,6 @@
         function endLevel(isWin) {
             isGameOver = true;
             const levelData = LEVELS[currentLevelIndex];
-            
             const title = document.getElementById('post-game-title');
             const wordEl = document.getElementById('post-game-word');
             const feedbackEl = document.getElementById('post-game-feedback');
@@ -585,7 +716,6 @@
 
             wordEl.innerText = levelData.word;
             feedbackEl.innerText = levelData.feedback;
-
             document.getElementById('post-game-modal').classList.add('active');
         }
 
@@ -608,16 +738,10 @@
             setupLevel();
         }
 
-        function showHowToPlay() {
-            document.getElementById('how-to-modal').classList.add('active');
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
-        }
+        function showHowToPlay() { document.getElementById('how-to-modal').classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
         initGame();
-
     </script>
 </body>
 </html>

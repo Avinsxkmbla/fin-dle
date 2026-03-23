@@ -6,184 +6,55 @@
     <title>Bulls & Bears | Financial Snakes & Ladders</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg-color: #1e1b4b; /* Deep Indigo */
-            --primary: #3b82f6;
-            --primary-hover: #2563eb;
-            --bull: #10b981;    /* Ladder green */
-            --bear: #ef4444;    /* Snake red */
-            --text-main: #f8fafc;
-            --glass-bg: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --board-size: 90vw;
-            --cell-size: calc(var(--board-size) / 10);
-        }
-
-        @media (min-width: 600px) {
-            :root {
-                --board-size: 500px;
-            }
-        }
-
+        :root { --bg-color: #1e1b4b; --primary: #3b82f6; --primary-hover: #2563eb; --bull: #10b981; --bear: #ef4444; --text-main: #f8fafc; --glass-bg: rgba(255, 255, 255, 0.1); --glass-border: rgba(255, 255, 255, 0.2); --board-size: 90vw; --cell-size: calc(var(--board-size) / 10); }
+        @media (min-width: 600px) { :root { --board-size: 500px; } }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; user-select: none; }
-
-        body {
-            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow-x: hidden;
-            padding-bottom: 2rem;
-        }
-
-        header {
-            width: 100%;
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(0, 0, 0, 0.3);
-            border-bottom: 1px solid var(--glass-border);
-            margin-bottom: 1rem;
-        }
-
+        body { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; padding-bottom: 2rem; }
+        
+        header { width: 100%; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.3); border-bottom: 1px solid var(--glass-border); margin-bottom: 1rem; }
+        .title-group { display: flex; align-items: center; gap: 10px; }
+        .btn-menu { background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); padding: 5px 12px; border-radius: 999px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .btn-menu:hover { background: rgba(255,255,255,0.1); }
         .title { font-size: 1.5rem; font-weight: 800; background: linear-gradient(to right, #10b981, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; letter-spacing: 1px; }
-
-        .status-panel {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            padding: 1rem;
-            border-radius: 16px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 1rem;
-            width: var(--board-size);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        }
-
-        .turn-indicator {
-            font-size: 1.2rem;
-            font-weight: 800;
-        }
-
-        .dice-area {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .dice-btn {
-            background: var(--primary); color: white; border: none; padding: 0.8rem 2rem;
-            border-radius: 12px; font-size: 1.2rem; font-weight: 800; cursor: pointer;
-            transition: all 0.2s; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);
-        }
+        
+        .status-panel { background: var(--glass-bg); border: 1px solid var(--glass-border); padding: 1rem; border-radius: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 1rem; width: var(--board-size); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .turn-indicator { font-size: 1.2rem; font-weight: 800; }
+        .dice-area { display: flex; align-items: center; gap: 20px; }
+        .dice-btn { background: var(--primary); color: white; border: none; padding: 0.8rem 2rem; border-radius: 12px; font-size: 1.2rem; font-weight: 800; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4); }
         .dice-btn:hover:not(:disabled) { transform: translateY(-2px); background: var(--primary-hover); }
         .dice-btn:disabled { background: #64748b; cursor: not-allowed; opacity: 0.7; }
-
-        .dice-result {
-            width: 50px; height: 50px; background: white; color: black;
-            border-radius: 12px; display: flex; justify-content: center; align-items: center;
-            font-size: 1.8rem; font-weight: 800; box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
-        }
-        
-        @keyframes rollAnim {
-            0% { transform: rotate(0deg) scale(1); }
-            50% { transform: rotate(180deg) scale(1.2); }
-            100% { transform: rotate(360deg) scale(1); }
-        }
+        .dice-result { width: 50px; height: 50px; background: white; color: black; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 1.8rem; font-weight: 800; box-shadow: inset 0 0 10px rgba(0,0,0,0.1); }
+        @keyframes rollAnim { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.2); } 100% { transform: rotate(360deg) scale(1); } }
         .rolling { animation: rollAnim 0.5s ease; }
 
-        /* Board */
-        .board-container {
-            width: var(--board-size);
-            height: var(--board-size);
-            position: relative;
-            background: rgba(15, 23, 42, 0.8);
-            border: 4px solid #334155;
-            border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-            overflow: hidden;
-        }
-
-        .grid-cell {
-            width: 10%; height: 10%;
-            position: absolute;
-            display: flex;
-            justify-content: flex-start;
-            align-items: flex-end;
-            padding: 4px;
-            font-size: 0.8rem;
-            font-weight: 800;
-            color: rgba(255,255,255,0.7);
-        }
-
-        .grid-cell.even { background: rgba(255,255,255,0.05); }
-        .grid-cell.odd { background: rgba(0,0,0,0.2); }
-
-        /* Connector Lines (Snakes & Ladders) */
-        .connector {
-            position: absolute;
-            transform-origin: 0 50%;
-            z-index: 5;
-            opacity: 0.6;
-            pointer-events: none;
-            border-radius: 4px;
-        }
-
+        .board-container { width: var(--board-size); height: var(--board-size); position: relative; background: rgba(15, 23, 42, 0.8); border: 4px solid #334155; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); overflow: hidden; }
+        .grid-cell { width: 10%; height: 10%; position: absolute; display: flex; justify-content: flex-start; align-items: flex-end; padding: 4px; font-size: 0.8rem; font-weight: 800; color: rgba(255,255,255,0.7); }
+        .grid-cell.even { background: rgba(255,255,255,0.05); } .grid-cell.odd { background: rgba(0,0,0,0.2); }
+        .connector { position: absolute; transform-origin: 0 50%; z-index: 5; opacity: 0.6; pointer-events: none; border-radius: 4px; }
         .ladder { background: linear-gradient(90deg, transparent, var(--bull), transparent); height: 8px; box-shadow: 0 0 10px var(--bull); }
         .snake { background: linear-gradient(90deg, transparent, var(--bear), transparent); height: 8px; box-shadow: 0 0 10px var(--bear); }
-
-        /* Tokens */
-        .token {
-            width: calc(var(--cell-size) * 0.7);
-            height: calc(var(--cell-size) * 0.7);
-            position: absolute;
-            border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            font-size: calc(var(--cell-size) * 0.4);
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            z-index: 10;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            /* Center the token inside the cell initially (will be offset in JS) */
-            margin-top: calc(var(--cell-size) * 0.15);
-            margin-left: calc(var(--cell-size) * 0.15);
-        }
-
+        
+        .token { width: calc(var(--cell-size) * 0.7); height: calc(var(--cell-size) * 0.7); position: absolute; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: calc(var(--cell-size) * 0.4); transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 10; box-shadow: 0 5px 15px rgba(0,0,0,0.5); margin-top: calc(var(--cell-size) * 0.15); margin-left: calc(var(--cell-size) * 0.15); }
         #token-player { background: #3b82f6; border: 2px solid white; z-index: 11; }
         #token-comp { background: #ef4444; border: 2px solid white; z-index: 10; }
 
-        /* Modals */
-        .modal-backdrop {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s;
-        }
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         .modal-backdrop.active { opacity: 1; pointer-events: auto; }
-        .modal {
-            background: white; color: #0f172a; border-radius: 20px;
-            padding: 2rem; width: 90%; max-width: 400px; text-align: center;
-            transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
+        .modal { background: white; color: #0f172a; border-radius: 20px; padding: 2rem; width: 90%; max-width: 400px; text-align: center; transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .modal-backdrop.active .modal { transform: scale(1); }
         .modal h2 { margin-bottom: 1rem; font-size: 1.6rem; }
         .modal p { color: #475569; margin-bottom: 1.5rem; line-height: 1.4; font-size: 1.1rem; }
         .modal .btn { width: 100%; background: #3b82f6; color: white; border: none; padding: 1rem; border-radius: 12px; font-weight: 800; font-size: 1.1rem; cursor: pointer; transition: background 0.2s;}
         .modal .btn:hover { background: #2563eb; }
-
-        .ladder-title { color: var(--bull); }
-        .snake-title { color: var(--bear); }
-
+        .ladder-title { color: var(--bull); } .snake-title { color: var(--bear); }
     </style>
 </head>
 <body>
-
     <header>
-        <div class="title">Bulls & Bears</div>
+        <div class="title-group">
+            <button class="btn-menu" onclick="window.location.href='index.html'">Menu</button>
+            <div class="title">Bulls & Bears</div>
+        </div>
         <div style="font-weight: 600;">👤 You vs 🤖 Comp</div>
     </header>
 
@@ -196,12 +67,10 @@
     </div>
 
     <div class="board-container" id="board">
-        <!-- Cells generated by JS -->
         <div id="token-player" class="token">👤</div>
         <div id="token-comp" class="token">🤖</div>
     </div>
 
-    <!-- Event Modal -->
     <div class="modal-backdrop" id="event-modal">
         <div class="modal">
             <h2 id="event-title">Event!</h2>
@@ -210,7 +79,6 @@
         </div>
     </div>
 
-    <!-- Victory Modal -->
     <div class="modal-backdrop" id="victory-modal">
         <div class="modal">
             <h2 id="victory-title" style="color: #10b981;">Financial Freedom! 🎉</h2>
@@ -229,244 +97,116 @@
             { start: 88, end: 65, type: 'snake', msg: "Clicked a WhatsApp link: 'Double your money in 10 days'! (Fell for a scam)" }
         ];
 
-        let playerPos = 1;
-        let compPos = 1;
-        let isPlayerTurn = true;
-        let isAnimating = false;
+        let playerPos = 1, compPos = 1, isPlayerTurn = true, isAnimating = false;
 
         function getCoords(position) {
             let pos = Math.min(Math.max(position - 1, 0), 99);
-            let row = Math.floor(pos / 10);
-            let col = pos % 10;
+            let row = Math.floor(pos / 10), col = pos % 10;
             if (row % 2 !== 0) col = 9 - col;
-            return { x: col, y: 9 - row }; // Top-left origin grid
+            return { x: col, y: 9 - row };
         }
 
         function buildBoard() {
             const board = document.getElementById('board');
-            
-            // Generate cells
             for (let i = 1; i <= 100; i++) {
                 const cell = document.createElement('div');
                 cell.className = `grid-cell ${(i % 2 === 0) ? 'even' : 'odd'}`;
                 const coords = getCoords(i);
-                cell.style.left = `${coords.x * 10}%`;
-                cell.style.top = `${coords.y * 10}%`;
-                cell.innerText = i;
-                board.appendChild(cell);
+                cell.style.left = `${coords.x * 10}%`; cell.style.top = `${coords.y * 10}%`;
+                cell.innerText = i; board.appendChild(cell);
             }
 
-            // Draw event lines
             EVENTS.forEach(ev => {
-                const c1 = getCoords(ev.start);
-                const c2 = getCoords(ev.end);
-                
-                // cell centers
-                const x1 = c1.x * 10 + 5; const y1 = c1.y * 10 + 5;
-                const x2 = c2.x * 10 + 5; const y2 = c2.y * 10 + 5;
-
-                const dx = x2 - x1;
-                const dy = y2 - y1;
-                const length = Math.sqrt(dx*dx + dy*dy);
-                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
+                const c1 = getCoords(ev.start), c2 = getCoords(ev.end);
+                const dx = c2.x - c1.x, dy = c2.y - c1.y;
                 const line = document.createElement('div');
                 line.className = `connector ${ev.type}`;
-                line.style.left = `${x1}%`;
-                line.style.top = `${y1}%`;
-                line.style.width = `${length}%`;
-                line.style.transform = `rotate(${angle}deg)`;
-                
-                // insert before tokens
+                line.style.left = `${c1.x * 10 + 5}%`; line.style.top = `${c1.y * 10 + 5}%`;
+                line.style.width = `${Math.sqrt(dx*dx + dy*dy) * 10}%`;
+                line.style.transform = `rotate(${Math.atan2(dy, dx) * 180 / Math.PI}deg)`;
                 board.insertBefore(line, document.getElementById('token-player'));
             });
-
-            updateTokens(true); // instant
+            updateTokens(true);
         }
 
         function updateTokens(instant = false) {
             const pToken = document.getElementById('token-player');
             const cToken = document.getElementById('token-comp');
-            
-            pToken.style.transition = instant ? "none" : "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)";
-            cToken.style.transition = instant ? "none" : "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)";
-
-            const pC = getCoords(playerPos);
-            const cC = getCoords(compPos);
-            
-            pToken.style.left = `${pC.x * 10}%`;
-            pToken.style.top = `${pC.y * 10}%`;
-
-            // Offset computer token slightly to avoid exact overlap
-            cToken.style.left = `calc(${cC.x * 10}% + 5px)`;
-            cToken.style.top = `calc(${cC.y * 10}% + 5px)`;
+            pToken.style.transition = cToken.style.transition = instant ? "none" : "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)";
+            const pC = getCoords(playerPos), cC = getCoords(compPos);
+            pToken.style.left = `${pC.x * 10}%`; pToken.style.top = `${pC.y * 10}%`;
+            cToken.style.left = `calc(${cC.x * 10}% + 5px)`; cToken.style.top = `calc(${cC.y * 10}% + 5px)`;
         }
 
         function loadState() {
             const saved = localStorage.getItem('bullsbears_state');
-            if (saved) {
-                const state = JSON.parse(saved);
-                playerPos = state.playerPos || 1;
-                compPos = state.compPos || 1;
-                isPlayerTurn = state.isPlayerTurn !== undefined ? state.isPlayerTurn : true;
-            }
+            if (saved) { const s = JSON.parse(saved); playerPos = s.playerPos || 1; compPos = s.compPos || 1; isPlayerTurn = s.isPlayerTurn !== undefined ? s.isPlayerTurn : true; }
         }
-
-        function saveState() {
-            localStorage.setItem('bullsbears_state', JSON.stringify({ playerPos, compPos, isPlayerTurn }));
-        }
-
+        function saveState() { localStorage.setItem('bullsbears_state', JSON.stringify({ playerPos, compPos, isPlayerTurn })); }
         function updateTurnUI() {
             const display = document.getElementById('turn-display');
             const btn = document.getElementById('btn-roll');
-            if (isPlayerTurn) {
-                display.innerText = "It's Your Turn! 👤";
-                display.style.color = "var(--primary)";
-                btn.disabled = false;
-            } else {
-                display.innerText = "Computer's Roll... 🤖";
-                display.style.color = "var(--bear)";
-                btn.disabled = true;
-            }
+            if (isPlayerTurn) { display.innerText = "It's Your Turn! 👤"; display.style.color = "var(--primary)"; btn.disabled = false; }
+            else { display.innerText = "Computer's Roll... 🤖"; display.style.color = "var(--bear)"; btn.disabled = true; }
         }
 
-        function rollDice() {
-            if (isAnimating || !isPlayerTurn) return;
-            executeTurn();
-        }
+        function rollDice() { if (!isAnimating && isPlayerTurn) executeTurn(); }
 
         async function executeTurn() {
-            isAnimating = true;
-            document.getElementById('btn-roll').disabled = true;
-
-            // Roll anim
-            const diceEl = document.getElementById('dice-val');
-            diceEl.classList.add('rolling');
+            isAnimating = true; document.getElementById('btn-roll').disabled = true;
+            const diceEl = document.getElementById('dice-val'); diceEl.classList.add('rolling');
             
-            let roll = 1;
-            // Fake rolls
-            for(let i=0; i<5; i++) {
-                diceEl.innerText = Math.floor(Math.random() * 6) + 1;
-                await new Promise(r => setTimeout(r, 100));
-            }
+            for(let i=0; i<5; i++) { diceEl.innerText = Math.floor(Math.random()*6)+1; await new Promise(r => setTimeout(r, 100)); }
+            let roll = Math.floor(Math.random()*6)+1; diceEl.innerText = roll; diceEl.classList.remove('rolling');
+            await new Promise(r => setTimeout(r, 300));
 
-            roll = Math.floor(Math.random() * 6) + 1;
-            diceEl.innerText = roll;
-            diceEl.classList.remove('rolling');
-
-            await new Promise(r => setTimeout(r, 300)); // Pread time
-
-            // Move token one by one
             let targetPos = (isPlayerTurn ? playerPos : compPos) + roll;
-            if (targetPos > 100) targetPos = isPlayerTurn ? playerPos : compPos; // Need exact 100
+            if (targetPos > 100) targetPos = isPlayerTurn ? playerPos : compPos;
 
             while ((isPlayerTurn ? playerPos : compPos) < targetPos) {
                 if (isPlayerTurn) playerPos++; else compPos++;
-                updateTokens();
-                await new Promise(r => setTimeout(r, 300));
+                updateTokens(); await new Promise(r => setTimeout(r, 300));
             }
 
-            // Check events
             const endPos = isPlayerTurn ? playerPos : compPos;
-            const eventTrigger = EVENTS.find(e => e.start === endPos);
-
-            if (eventTrigger) {
-                await new Promise(r => setTimeout(r, 300)); // wait for settle
-                
-                // Show modal, wait for close
-                await showEventModal(eventTrigger, isPlayerTurn);
-                
-                if (isPlayerTurn) playerPos = eventTrigger.end;
-                else compPos = eventTrigger.end;
-                
-                updateTokens();
-                await new Promise(r => setTimeout(r, 600)); // Wait for slide
+            const ev = EVENTS.find(e => e.start === endPos);
+            if (ev) {
+                await new Promise(r => setTimeout(r, 300));
+                await showEventModal(ev, isPlayerTurn);
+                if (isPlayerTurn) playerPos = ev.end; else compPos = ev.end;
+                updateTokens(); await new Promise(r => setTimeout(r, 600));
             }
 
-            // Check Win
-            if (playerPos === 100 || compPos === 100) {
-                showVictory(isPlayerTurn);
-                return; // End loop
-            }
+            if (playerPos === 100 || compPos === 100) return showVictory(isPlayerTurn);
 
-            // Switch Turns
-            isPlayerTurn = !isPlayerTurn;
-            saveState();
-            updateTurnUI();
-            isAnimating = false;
-
-            if (!isPlayerTurn) {
-                setTimeout(executeTurn, 1000); // Trigger computer AI
-            }
+            isPlayerTurn = !isPlayerTurn; saveState(); updateTurnUI(); isAnimating = false;
+            if (!isPlayerTurn) setTimeout(executeTurn, 1000);
         }
 
-        // Modal triggers
         let resumeResolver = null;
-
         function showEventModal(event, isPlayer) {
             return new Promise(resolve => {
                 resumeResolver = resolve;
-                const mTitle = document.getElementById('event-title');
-                const mDesc = document.getElementById('event-desc');
-
-                if (event.type === 'ladder') {
-                    mTitle.innerText = "Bull Market! 📈";
-                    mTitle.className = "ladder-title";
-                } else {
-                    mTitle.innerText = "Bear Attack! 📉";
-                    mTitle.className = "snake-title";
-                }
-
+                const mTitle = document.getElementById('event-title'); const mDesc = document.getElementById('event-desc');
+                mTitle.innerText = event.type === 'ladder' ? "Bull Market! 📈" : "Bear Attack! 📉";
+                mTitle.className = event.type === 'ladder' ? "ladder-title" : "snake-title";
                 mDesc.innerText = `[${isPlayer ? 'You' : 'Computer'}] ${event.msg}`;
                 document.getElementById('event-modal').classList.add('active');
             });
         }
+        function resumeGame() { document.getElementById('event-modal').classList.remove('active'); if (resumeResolver) resumeResolver(); resumeResolver = null; }
 
-        function resumeGame() {
-            document.getElementById('event-modal').classList.remove('active');
-            if (resumeResolver) resumeResolver();
-            resumeResolver = null;
-        }
-
-        function showVictory(isPlayerWin) {
-            const title = document.getElementById('victory-title');
-            const desc = document.getElementById('victory-desc');
-
-            if (isPlayerWin) {
-                title.innerText = "Financial Freedom! 🎉";
-                title.style.color = "var(--bull)";
-                desc.innerText = "You reached 100 exactly and mastered your personal finances! A true wealth builder.";
-            } else {
-                title.innerText = "Computer Wins! 🤖";
-                title.style.color = "var(--bear)";
-                desc.innerText = "The computer reached 100 first. Keep playing to learn more about the markets!";
-            }
+        function showVictory(isPlayer) {
+            document.getElementById('victory-title').innerText = isPlayer ? "Financial Freedom! 🎉" : "Computer Wins! 🤖";
+            document.getElementById('victory-title').style.color = isPlayer ? "var(--bull)" : "var(--bear)";
+            document.getElementById('victory-desc').innerText = isPlayer ? "You reached 100 exactly and mastered your personal finances!" : "The computer reached 100 first.";
             document.getElementById('victory-modal').classList.add('active');
         }
 
-        function resetGame() {
-            playerPos = 1;
-            compPos = 1;
-            isPlayerTurn = true;
-            isAnimating = false;
-            document.getElementById('dice-val').innerText = '-';
-            saveState();
-            updateTokens(true);
-            updateTurnUI();
-            document.getElementById('victory-modal').classList.remove('active');
-        }
+        function resetGame() { playerPos = compPos = 1; isPlayerTurn = true; isAnimating = false; document.getElementById('dice-val').innerText = '-'; saveState(); updateTokens(true); updateTurnUI(); document.getElementById('victory-modal').classList.remove('active'); }
 
-        // Init
-        buildBoard();
-        loadState();
-        updateTokens(true);
-        updateTurnUI();
-
-        // If page loaded and it's computer turn, start it
-        if (!isPlayerTurn && playerPos !== 100 && compPos !== 100) {
-            setTimeout(executeTurn, 1000);
-        }
-
+        buildBoard(); loadState(); updateTokens(true); updateTurnUI();
+        if (!isPlayerTurn && playerPos !== 100 && compPos !== 100) setTimeout(executeTurn, 1000);
     </script>
 </body>
 </html>

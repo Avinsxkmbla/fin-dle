@@ -19,343 +19,87 @@
             --locked: #334155;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Outfit', sans-serif;
-            user-select: none;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; user-select: none; }
 
         body {
-            background: linear-gradient(135deg, #0f172a 0%, #2e1065 100%);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow-x: hidden;
+            background: linear-gradient(135deg, #0f172a 0%, #2e1065 100%); color: var(--text-main);
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center; overflow-x: hidden;
         }
 
         header {
-            width: 100%;
-            max-width: 500px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--glass-border);
-            position: sticky;
-            top: 0;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(10px);
-            z-index: 10;
+            width: 100%; max-width: 500px; display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 1.5rem; border-bottom: 1px solid var(--glass-border); position: sticky; top: 0;
+            background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); z-index: 10;
         }
 
-        .title {
-            font-size: 1.8rem;
-            font-weight: 800;
-            background: linear-gradient(to right, #8b5cf6, #d946ef);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 1px;
-        }
+        .title-group { display: flex; align-items: center; gap: 10px; }
+        .btn-menu { background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); padding: 5px 12px; border-radius: 999px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .btn-menu:hover { background: rgba(255,255,255,0.1); }
 
-        .hearts {
-            font-size: 1.2rem;
-            font-weight: 800;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            background: rgba(239, 68, 68, 0.1);
-            padding: 0.5rem 1rem;
-            border-radius: 999px;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #fca5a5;
-        }
+        .title { font-size: 1.8rem; font-weight: 800; background: linear-gradient(to right, #8b5cf6, #d946ef); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 1px; }
+
+        .hearts { font-size: 1.2rem; font-weight: 800; display: flex; align-items: center; gap: 5px; background: rgba(239, 68, 68, 0.1); padding: 0.5rem 1rem; border-radius: 999px; border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; }
 
         /* Map UI */
-        .map-container {
-            flex: 1;
-            width: 100%;
-            max-width: 500px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 2rem 0 4rem 0;
-            position: relative;
-        }
+        .map-container { flex: 1; width: 100%; max-width: 500px; display: flex; flex-direction: column; align-items: center; padding: 2rem 0 4rem 0; position: relative; }
 
-        .path-line {
-            position: absolute;
-            width: 4px;
-            background: var(--locked);
-            top: 60px;
-            bottom: 60px;
-            z-index: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            border-radius: 2px;
-        }
+        .path-line { position: absolute; width: 4px; background: var(--locked); top: 60px; bottom: 60px; z-index: 0; left: 50%; transform: translateX(-50%); border-radius: 2px; }
+        .path-line-fill { position: absolute; width: 100%; background: var(--primary); top: 0; height: 0%; transition: height 1s ease-in-out; border-radius: 2px; }
 
-        .path-line-fill {
-            position: absolute;
-            width: 100%;
-            background: var(--primary);
-            top: 0;
-            height: 0%; /* Transitions via JS */
-            transition: height 1s ease-in-out;
-            border-radius: 2px;
-        }
-
-        .node-wrapper {
-            position: relative;
-            z-index: 1;
-            margin: 2rem 0;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-        }
-        
-        /* Alternate sides for node labels */
+        .node-wrapper { position: relative; z-index: 1; margin: 2rem 0; width: 100%; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: transform 0.2s ease; }
         .node-wrapper:nth-child(even) { transform: translateX(30px); }
         .node-wrapper:nth-child(odd) { transform: translateX(-30px); }
-
         .node-wrapper:hover { transform: scale(1.05) translateX(0); }
 
-        .node {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: 800;
-            font-size: 1.5rem;
-            background: var(--locked);
-            border: 4px solid #1e293b;
-            color: #64748b;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            transition: all 0.4s ease;
-        }
+        .node { width: 70px; height: 70px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 800; font-size: 1.5rem; background: var(--locked); border: 4px solid #1e293b; color: #64748b; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.4s ease; }
+        .node.unlocked { background: var(--primary); border-color: #a78bfa; color: white; box-shadow: 0 0 20px rgba(139, 92, 246, 0.5); }
+        .node.completed { background: var(--success); border-color: #34d399; color: white; box-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
 
-        .node.unlocked {
-            background: var(--primary);
-            border-color: #a78bfa;
-            color: white;
-            box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
-        }
-
-        .node.completed {
-            background: var(--success);
-            border-color: #34d399;
-            color: white;
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
-        }
-
-        .node-label {
-            margin-top: 0.5rem;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            text-align: center;
-            background: rgba(15, 23, 42, 0.7);
-            padding: 4px 8px;
-            border-radius: 6px;
-        }
-
+        .node-label { margin-top: 0.5rem; font-weight: 600; font-size: 0.9rem; color: var(--text-muted); text-align: center; background: rgba(15, 23, 42, 0.7); padding: 4px 8px; border-radius: 6px; }
         .node-wrapper.unlocked .node-label { color: #e2e8f0; }
 
         /* Quiz Modal */
-        .modal-backdrop {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-backdrop.active { opacity: 1; pointer-events: auto; }
 
-        .modal-backdrop.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        .modal { background: rgba(30, 41, 59, 0.95); border: 1px solid var(--glass-border); border-radius: 20px; padding: 2rem; width: 90%; max-width: 450px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8); transform: translateY(50px); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); display: flex; flex-direction: column; gap: 1.5rem; }
+        .modal-backdrop.active .modal { transform: translateY(0); }
 
-        .modal {
-            background: rgba(30, 41, 59, 0.95);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 2rem;
-            width: 90%;
-            max-width: 450px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
-            transform: translateY(50px);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
+        .quiz-header { text-align: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; }
+        .quiz-title { color: var(--primary); font-weight: 800; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem; }
+        .quiz-question { font-size: 1.15rem; line-height: 1.4; color: white; font-weight: 600; }
 
-        .modal-backdrop.active .modal {
-            transform: translateY(0);
-        }
-
-        .quiz-header {
-            text-align: center;
-            border-bottom: 1px solid var(--glass-border);
-            padding-bottom: 1rem;
-        }
-        
-        .quiz-title {
-            color: var(--primary);
-            font-weight: 800;
-            font-size: 1.2rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
-        }
-
-        .quiz-question {
-            font-size: 1.15rem;
-            line-height: 1.4;
-            color: white;
-            font-weight: 600;
-        }
-
-        /* Options */
-        .option-btn {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            color: var(--text-main);
-            padding: 1rem;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            text-align: left;
-            transition: all 0.2s ease;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
+        .option-btn { background: var(--glass-bg); border: 1px solid var(--glass-border); color: var(--text-main); padding: 1rem; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; text-align: left; transition: all 0.2s ease; display: flex; gap: 10px; align-items: center; }
         .option-btn:hover { background: rgba(255, 255, 255, 0.1); transform: translateY(-2px); }
         .option-btn:active { transform: translateY(0); }
-        
         .option-btn.wrong { background: rgba(239, 68, 68, 0.2); border-color: var(--danger); }
         .option-btn.correct { background: rgba(16, 185, 129, 0.2); border-color: var(--success); }
 
         /* Match Containers */
-        .match-container {
-            display: flex;
-            gap: 10px;
-            justify-content: space-between;
-        }
+        .match-container { display: flex; gap: 10px; justify-content: space-between; }
+        .match-col { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+        .match-item { background: var(--glass-bg); border: 2px solid var(--glass-border); padding: 0.8rem; border-radius: 12px; font-size: 0.9rem; font-weight: 600; cursor: pointer; text-align: center; transition: all 0.2s ease; color: var(--text-main); min-height: 80px; display: flex; align-items: center; justify-content: center; }
+        .match-item.selected { background: rgba(139, 92, 246, 0.2); border-color: var(--primary); }
+        .match-item.matched { background: rgba(16, 185, 129, 0.2); border-color: var(--success); color: var(--success); pointer-events: none; opacity: 0.7; }
 
-        .match-col {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            flex: 1;
-        }
-
-        .match-item {
-            background: var(--glass-bg);
-            border: 2px solid var(--glass-border);
-            padding: 0.8rem;
-            border-radius: 12px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.2s ease;
-            color: var(--text-main);
-            min-height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .match-item.selected {
-            background: rgba(139, 92, 246, 0.2);
-            border-color: var(--primary);
-        }
-
-        .match-item.matched {
-            background: rgba(16, 185, 129, 0.2);
-            border-color: var(--success);
-            color: var(--success);
-            pointer-events: none;
-            opacity: 0.7;
-        }
-
-        /* Animations */
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-            20%, 40%, 60%, 80% { transform: translateX(5px); }
-        }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); } 20%, 40%, 60%, 80% { transform: translateX(5px); } }
         .shake { animation: shake 0.5s; }
 
-        /* Tools/Feedback */
-        .feedback-toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: var(--danger);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 1rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 200;
-            text-align: center;
-            max-width: 90%;
-            border: 2px solid white;
-        }
+        .feedback-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--danger); color: white; padding: 1rem 1.5rem; border-radius: 12px; font-weight: 600; font-size: 1rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 200; text-align: center; max-width: 90%; border: 2px solid white; }
+        .feedback-toast.show { transform: translateX(-50%) translateY(0); }
+        .feedback-toast.success { background: var(--success); }
 
-        .feedback-toast.show {
-            transform: translateX(-50%) translateY(0);
-        }
-
-        .feedback-toast.success {
-            background: var(--success);
-        }
-
-        /* Main Menu Button */
-        .btn-main {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 1rem;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            font-weight: 800;
-            cursor: pointer;
-            width: 100%;
-            transition: all 0.2s ease;
-            margin-top: 1rem;
-            display: none;
-        }
+        .btn-main { background: var(--primary); color: white; border: none; padding: 1rem; border-radius: 12px; font-size: 1.1rem; font-weight: 800; cursor: pointer; width: 100%; transition: all 0.2s ease; margin-top: 1rem; display: none; }
         .btn-main:hover { background: var(--primary-hover); }
 
     </style>
 </head>
 <body>
-
     <header>
-        <div class="title">Fin-Lingo</div>
+        <div class="title-group">
+            <button class="btn-menu" onclick="window.location.href='index.html'">Menu</button>
+            <div class="title">Fin-Lingo</div>
+        </div>
         <div class="hearts" id="hearts-display">❤️ 3</div>
     </header>
 
@@ -363,18 +107,13 @@
         <div class="path-line">
             <div class="path-line-fill" id="path-fill"></div>
         </div>
-
-        <!-- Nodes injected here via JS -->
         <div id="nodes-container" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
-        
         <button class="btn-main" id="btn-victory" onclick="resetGame()">Play Again</button>
     </div>
 
     <!-- Quiz Modal -->
     <div class="modal-backdrop" id="quiz-modal">
-        <div class="modal" id="quiz-content">
-            <!-- Injected Quiz Content -->
-        </div>
+        <div class="modal" id="quiz-content"></div>
     </div>
 
     <div class="feedback-toast" id="feedback">Feedback text</div>
@@ -382,50 +121,30 @@
     <script>
         const MAX_HEARTS = 3;
         let hearts = MAX_HEARTS;
-        let currentNodeIndex = 0; // 0, 1, 2
+        let currentNodeIndex = 0; 
         
-        // Tap to Match State
         let matchSelectionL = null;
         let matchSelectionR = null;
         let matchesFound = 0;
 
         const NODES_DATA = [
             {
-                id: 0,
-                title: "Saving Basics",
-                type: "mcq",
-                question: "You get your first salary. What should you do first?",
-                options: [
-                    { id: 'A', text: "Buy a new phone.", isCorrect: false },
-                    { id: 'B', text: "Set aside 20% in savings.", isCorrect: true },
-                    { id: 'C', text: "Go to a fancy restaurant.", isCorrect: false }
-                ],
-                successMsg: "Correct! Always 'Pay Yourself First'!",
-                failMsg: "Always 'Pay Yourself First'! Save a portion of your income before you start spending."
+                id: 0, title: "Saving Basics", type: "mcq", question: "You get your first salary. What should you do first?",
+                options: [ { id: 'A', text: "Buy a new phone.", isCorrect: false }, { id: 'B', text: "Set aside 20% in savings.", isCorrect: true }, { id: 'C', text: "Go to a fancy restaurant.", isCorrect: false } ],
+                successMsg: "Correct! Always 'Pay Yourself First'!", failMsg: "Always 'Pay Yourself First'! Save a portion of your income before you start spending."
             },
             {
-                id: 1,
-                title: "The Magic of Mutual Funds",
-                type: "match",
-                question: "Match the concept:",
+                id: 1, title: "The Magic of Mutual Funds", type: "match", question: "Match the concept:",
                 pairs: [
                     { L: { id: "L1", text: "Putting all your eggs in one basket" }, R: { id: "R1", text: "High Risk / No Diversification", matchFor: "L1" } },
                     { L: { id: "L2", text: "A Mutual Fund" }, R: { id: "R2", text: "Basket with many different eggs", matchFor: "L2" } }
                 ],
-                successMsg: "Matched! A Mutual Fund lowers your risk by diversifying.",
-                failMsg: "Wrong match! A Mutual Fund is a basket with many different eggs (stocks), lowering your risk."
+                successMsg: "Matched! A Mutual Fund lowers your risk by diversifying.", failMsg: "Wrong match! A Mutual Fund is a basket with many different eggs (stocks), lowering your risk."
             },
             {
-                id: 2,
-                title: "Emergency Funds",
-                type: "tf",
-                question: "True or False: You should invest your emergency medical money in the stock market to make it grow.",
-                options: [
-                    { id: 'T', text: "True", isCorrect: false },
-                    { id: 'F', text: "False", isCorrect: true }
-                ],
-                successMsg: "Correct! Keep emergency funds in a safe, instantly accessible bank account.",
-                failMsg: "Emergencies happen without warning. Keep emergency funds in a safe, accessible bank account, not the volatile stock market!"
+                id: 2, title: "Emergency Funds", type: "tf", question: "True or False: You should invest your emergency medical money in the stock market to make it grow.",
+                options: [ { id: 'T', text: "True", isCorrect: false }, { id: 'F', text: "False", isCorrect: true } ],
+                successMsg: "Correct! Keep emergency funds in a safe, instantly accessible bank account.", failMsg: "Emergencies happen without warning. Keep emergency funds in a safe, accessible bank account, not the volatile stock market!"
             }
         ];
 
@@ -451,200 +170,102 @@
             NODES_DATA.forEach((data, index) => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'node-wrapper';
+                let stateClass = 'locked', icon = '🔒';
                 
-                let stateClass = 'locked';
-                let icon = '🔒';
-                
-                if (index < currentNodeIndex) {
-                    stateClass = 'completed';
-                    icon = '✓';
-                } else if (index === currentNodeIndex) {
-                    stateClass = 'unlocked';
-                    icon = index + 1;
-                    wrapper.onclick = () => openQuiz(index);
-                }
+                if (index < currentNodeIndex) { stateClass = 'completed'; icon = '✓'; }
+                else if (index === currentNodeIndex) { stateClass = 'unlocked'; icon = index + 1; wrapper.onclick = () => openQuiz(index); }
 
                 wrapper.classList.add(stateClass);
-                
-                wrapper.innerHTML = `
-                    <div class="node ${stateClass}">${icon}</div>
-                    <div class="node-label">${data.title}</div>
-                `;
+                wrapper.innerHTML = `<div class="node ${stateClass}">${icon}</div><div class="node-label">${data.title}</div>`;
                 container.appendChild(wrapper);
             });
 
-            // Update path fill
             const fill = document.getElementById('path-fill');
             const percent = (currentNodeIndex / (NODES_DATA.length - 1)) * 100;
             fill.style.height = `${Math.min(percent, 100)}%`;
 
-            if (currentNodeIndex >= NODES_DATA.length) {
-                document.getElementById('btn-victory').style.display = 'block';
-            } else {
-                document.getElementById('btn-victory').style.display = 'none';
-            }
+            document.getElementById('btn-victory').style.display = (currentNodeIndex >= NODES_DATA.length) ? 'block' : 'none';
         }
 
         function openQuiz(index) {
             const data = NODES_DATA[index];
             const modal = document.getElementById('quiz-content');
             
-            let contentHTML = `
-                <div class="quiz-header">
-                    <div class="quiz-title">${data.title}</div>
-                    <div class="quiz-question">${data.question}</div>
-                </div>
-            `;
+            let contentHTML = `<div class="quiz-header"><div class="quiz-title">${data.title}</div><div class="quiz-question">${data.question}</div></div>`;
 
             if (data.type === 'mcq' || data.type === 'tf') {
                 contentHTML += `<div style="display: flex; flex-direction: column; gap: 10px;">`;
                 data.options.forEach(opt => {
-                    contentHTML += `<button class="option-btn" onclick="handleAnswer(${index}, ${opt.isCorrect})">
-                        <span style="background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 6px;">${opt.id}</span> 
-                        ${opt.text}
-                    </button>`;
+                    contentHTML += `<button class="option-btn" onclick="handleAnswer(${index}, ${opt.isCorrect})"><span style="background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 6px;">${opt.id}</span> ${opt.text}</button>`;
                 });
                 contentHTML += `</div>`;
             } else if (data.type === 'match') {
-                matchSelectionL = null;
-                matchSelectionR = null;
-                matchesFound = 0;
-                
-                // Shuffle R side for 'gameplay'
+                matchSelectionL = null; matchSelectionR = null; matchesFound = 0;
                 const shuffledR = [...data.pairs].sort(() => Math.random() - 0.5);
-
                 contentHTML += `<div class="match-container">
-                    <div class="match-col">
-                        ${data.pairs.map(p => `<div class="match-item left" id="${p.L.id}" onclick="selectMatch('L', '${p.L.id}')">${p.L.text}</div>`).join('')}
-                    </div>
-                    <div class="match-col">
-                        ${shuffledR.map(p => `<div class="match-item right" id="${p.R.id}" data-matchfor="${p.R.matchFor}" onclick="selectMatch('R', '${p.R.id}')">${p.R.text}</div>`).join('')}
-                    </div>
+                    <div class="match-col">${data.pairs.map(p => `<div class="match-item left" id="${p.L.id}" onclick="selectMatch('L', '${p.L.id}')">${p.L.text}</div>`).join('')}</div>
+                    <div class="match-col">${shuffledR.map(p => `<div class="match-item right" id="${p.R.id}" data-matchfor="${p.R.matchFor}" onclick="selectMatch('R', '${p.R.id}')">${p.R.text}</div>`).join('')}</div>
                 </div>`;
             }
 
-            modal.innerHTML = contentHTML;
-            document.getElementById('quiz-modal').classList.add('active');
+            modal.innerHTML = contentHTML; document.getElementById('quiz-modal').classList.add('active');
         }
 
-        function closeQuiz() {
-            document.getElementById('quiz-modal').classList.remove('active');
-        }
+        function closeQuiz() { document.getElementById('quiz-modal').classList.remove('active'); }
 
         function handleAnswer(nodeIndex, isCorrect) {
-            const data = NODES_DATA[nodeIndex];
-            if (isCorrect) {
-                successState(data.successMsg);
-            } else {
-                failState(data.failMsg);
-            }
+            if (isCorrect) successState(NODES_DATA[nodeIndex].successMsg);
+            else failState(NODES_DATA[nodeIndex].failMsg);
         }
 
         function selectMatch(side, id) {
             if (side === 'L') {
                 if(matchSelectionL) document.getElementById(matchSelectionL).classList.remove('selected');
-                matchSelectionL = id;
-                document.getElementById(id).classList.add('selected');
+                matchSelectionL = id; document.getElementById(id).classList.add('selected');
             } else {
                 if(matchSelectionR) document.getElementById(matchSelectionR).classList.remove('selected');
-                matchSelectionR = id;
-                document.getElementById(id).classList.add('selected');
+                matchSelectionR = id; document.getElementById(id).classList.add('selected');
             }
-
-            if (matchSelectionL && matchSelectionR) {
-                checkMatch();
-            }
+            if (matchSelectionL && matchSelectionR) checkMatch();
         }
 
         function checkMatch() {
             const rEl = document.getElementById(matchSelectionR);
-            const matchFor = rEl.getAttribute('data-matchfor');
-
-            if (matchFor === matchSelectionL) {
-                // Correct Match
-                document.getElementById(matchSelectionL).classList.add('matched');
+            if (rEl.getAttribute('data-matchfor') === matchSelectionL) {
+                document.getElementById(matchSelectionL).classList.add('matched', 'selected');
+                rEl.classList.add('matched'); rEl.classList.remove('selected');
                 document.getElementById(matchSelectionL).classList.remove('selected');
-                rEl.classList.add('matched');
-                rEl.classList.remove('selected');
-                matchesFound++;
-                matchSelectionL = null;
-                matchSelectionR = null;
-
-                if (matchesFound === NODES_DATA[currentNodeIndex].pairs.length) {
-                    setTimeout(() => {
-                        successState(NODES_DATA[currentNodeIndex].successMsg);
-                    }, 500);
-                }
+                matchesFound++; matchSelectionL = null; matchSelectionR = null;
+                if (matchesFound === NODES_DATA[currentNodeIndex].pairs.length) setTimeout(() => successState(NODES_DATA[currentNodeIndex].successMsg), 500);
             } else {
-                // Wrong Match
                 document.getElementById(matchSelectionL).classList.remove('selected');
-                rEl.classList.remove('selected');
-                matchSelectionL = null;
-                matchSelectionR = null;
-                
+                rEl.classList.remove('selected'); matchSelectionL = null; matchSelectionR = null;
                 failState(NODES_DATA[currentNodeIndex].failMsg);
             }
         }
 
         function successState(msg) {
-            showFeedback(msg, true);
-            closeQuiz();
-            currentNodeIndex++;
-            saveState();
-            setTimeout(updateUI, 500);
+            showFeedback(msg, true); closeQuiz(); currentNodeIndex++; saveState(); setTimeout(updateUI, 500);
         }
 
         function failState(msg) {
-            hearts--;
-            document.getElementById('hearts-display').innerText = `❤️ ${hearts}`;
-            
+            hearts--; document.getElementById('hearts-display').innerText = `❤️ ${hearts}`;
             const modal = document.getElementById('quiz-content');
-            modal.classList.remove('shake');
-            void modal.offsetWidth;
-            modal.classList.add('shake');
-
+            modal.classList.remove('shake'); void modal.offsetWidth; modal.classList.add('shake');
             showFeedback(msg, false);
-
-            if (hearts <= 0) {
-                setTimeout(() => {
-                    closeQuiz();
-                    hearts = MAX_HEARTS;
-                    updateUI();
-                    showFeedback("Out of Hearts! Try Node again.", false);
-                }, 1500);
-            }
+            if (hearts <= 0) { setTimeout(() => { closeQuiz(); hearts = MAX_HEARTS; updateUI(); showFeedback("Out of Hearts! Try Node again.", false); }, 1500); }
         }
 
         function showFeedback(msg, isSuccess) {
-            const fb = document.getElementById('feedback');
-            fb.innerText = msg;
-            if (isSuccess) {
-                fb.classList.add('success');
-                fb.classList.remove('danger');
-            } else {
-                fb.classList.remove('success');
-                fb.classList.add('danger');
-                fb.style.backgroundColor = "var(--danger)";
-            }
-            
-            fb.classList.add('show');
-            setTimeout(() => {
-                fb.classList.remove('show');
-            }, 3000);
+            const fb = document.getElementById('feedback'); fb.innerText = msg;
+            if (isSuccess) { fb.classList.add('success'); fb.classList.remove('danger'); }
+            else { fb.classList.remove('success'); fb.classList.add('danger'); fb.style.backgroundColor = "var(--danger)"; }
+            fb.classList.add('show'); setTimeout(() => fb.classList.remove('show'), 3000);
         }
 
-        function resetGame() {
-            currentNodeIndex = 0;
-            hearts = MAX_HEARTS;
-            saveState();
-            updateUI();
-            document.getElementById('btn-victory').style.display = 'none';
-        }
+        function resetGame() { currentNodeIndex = 0; hearts = MAX_HEARTS; saveState(); updateUI(); document.getElementById('btn-victory').style.display = 'none'; }
 
-        // Init
-        loadState();
-        updateUI();
-
+        loadState(); updateUI();
     </script>
 </body>
 </html>
